@@ -3,3 +3,4 @@ proxy_logs/
 logs/
 *.pyc
 .env
+*.sql
