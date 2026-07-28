@@ -465,9 +465,22 @@ def auto_nemesis_loop(sock):
         }
         
         while state.auto_nemesis_running:
-            # 0.5 Check if we accidentally changed maps (e.g., from death)
+            # 0. Check Death
+            if getattr(state, "player_hp", 1) <= 0:
+                print("[*] Player died! Initiating auto-revive sequence...")
+                hex_send(sock, "00020134", "REVIVE REQUEST")
+                
+                print("[*] Waiting to arrive in town...")
+                time.sleep(6.0) # Wait for 0111 and map sync to finish
+                
+                print(f"[*] Warping back to farm spot (Map {start_map_id})...")
+                teleport(sock, start_map_id, start_x, start_y)
+                time.sleep(2.0)
+                continue
+
+            # 0.5 Check if we accidentally changed maps
             if state.current_map_hex and int(state.current_map_hex, 16) != start_map_id:
-                print(f"[*] Map changed unexpectedly (died?). Warping back to {start_map_id}...")
+                print(f"[*] Map changed unexpectedly. Warping back to {start_map_id}...")
                 teleport(sock, start_map_id, start_x, start_y)
                 time.sleep(2.0)
                 continue
