@@ -96,6 +96,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     terminal.appendChild(span);
                 });
 
+                // Cap logs to prevent infinite DOM memory usage (browser crash)
+                while(terminal.childNodes.length > 500) {
+                    terminal.removeChild(terminal.firstChild);
+                }
+
                 if(isScrolledToBottom) {
                     terminal.scrollTop = terminal.scrollHeight;
                 }
