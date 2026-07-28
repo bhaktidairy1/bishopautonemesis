@@ -526,8 +526,10 @@ def auto_nemesis_loop(sock):
             mobs = list(state.monsters.items())
             
             for uid, m in mobs:
-                # Filter strictly to Moss Golems as requested
-                if "Moss Golem" not in m.get('name', ''):
+                # Filter strictly to Moss Golems as requested (or its raw ID if DB is missing)
+                name = m.get('name', '')
+                mob_id = m.get('id', 0)
+                if "Moss Golem" not in name and mob_id != 20000282 and "20000282" not in name:
                     continue
                     
                 mx = m.get('x', 0)
