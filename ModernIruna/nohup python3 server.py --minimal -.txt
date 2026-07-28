@@ -1,0 +1,18 @@
+nohup python3 server.py --minimal --url "https://gae4php82-real.an.r.appspot.com/_ah/login?continue=https://gae4php82-real.an.r.appspot.com/authcreate&auth=g.a000_AgHxtZwYUg6UzxIoLktRY9_0NIwsEP6RIrKMlJPrvFr7Yz4WpxEYi9ex-vcdsUEikqZzAACgYKAQsSARYSFQHGX2MicDCklNW1k0JgRkX3M-OD0xoVAUF8yKq5o_EDjiK3yaOGce1R1iy20076" > /dev/null 2>&1 &
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ps aux | grep server.py

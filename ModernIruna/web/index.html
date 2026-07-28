@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iruna Core Command</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="background-anim"></div>
+    <div class="container">
+
+        <!-- Login Interface -->
+        <main id="login-screen" class="glass-panel active">
+            <div class="login-header">
+                <div class="glow-orb"></div>
+                <h1>IRUNA <span class="accent">CORE</span></h1>
+                <p>Establishing remote neural link...</p>
+            </div>
+
+            <div class="input-group">
+                <label>Authentication Mage URL</label>
+                <input type="text" id="mageurl-input"
+                    value="https://gae4php82-real.an.r.appspot.com/_ah/login?continue=https://gae4php82-real.an.r.appspot.com/authcreate&auth=g.a000_AgHxtZwYUg6UzxIoLktRY9_0NIwsEP6RIrKMlJPrvFr7Yz4WpxEYi9ex-vcdsUEikqZzAACgYKAQsSARYSFQHGX2MicDCklNW1k0JgRkX3M-OD0xoVAUF8yKq5o_EDjiK3yaOGce1R1iy20076">
+            </div>
+
+            <button id="connect-btn" class="sys-btn primary">INITIALIZE CONNECTION</button>
+            <div id="login-status" class="status-msg"></div>
+        </main>
+
+        <!-- Dashboard Interface -->
+        <main id="dashboard-screen" class="glass-panel hidden">
+            <header class="dash-head">
+                <h2>IRUNA <span class="accent">DASHBOARD</span></h2>
+                <div class="conn-status"><span class="pulse"></span> Connected</div>
+            </header>
+
+            <div class="grid-layout">
+                <!-- Controls -->
+                <section class="panel controls">
+                    <h3>Combat Matrix</h3>
+                    <div class="btn-group">
+                        <button class="mode-btn sys-btn" data-mode="STANDBY">STANDBY</button>
+                        <button class="mode-btn sys-btn" data-mode="AUTO">AUTO-COLON</button>
+                        <button class="mode-btn sys-btn" data-mode="MANUAL">MANUAL</button>
+                    </div>
+
+                    <div class="separator"></div>
+
+                    <h3>Movement Overrides</h3>
+                    <button id="pause-btn" class="sys-btn warn">PAUSE NAV</button>
+
+                    <div class="separator"></div>
+
+                    <h3>Packet Injection</h3>
+                    <div class="hex-flex">
+                        <input type="text" id="hex-input" placeholder="e.g. 0002143F" class="code-font">
+                        <button id="inject-btn" class="sys-btn accent-b">FIRE</button>
+                    </div>
+
+                    <div class="separator"></div>
+
+                    <h3>Map Teleport</h3>
+                    <div class="tp-group">
+                        <div id="current-map-display" class="map-display">
+                        <div style="margin-bottom: 10px; color: #00f0ff;">
+                            Current Map: <span id="map-name" class="accent">Unknown</span>
+                        </div>
+                        <div style="margin-bottom: 15px; color: #fff;">
+                            HP: <span id="player-hp" class="accent-b">0</span> / <span id="player-max-hp" style="color: #888;">0</span> 
+                            &nbsp;&nbsp;
+                            MP: <span id="player-mp" style="color: #f0f;">0</span> / <span id="player-max-mp" style="color: #888;">0</span>
+                        </div>
+                        <input type="number" id="tp-mapid" placeholder="Map ID (e.g. 25100)"
+                            class="code-font tp-input-full">
+                        <div class="tp-coords">
+                            <input type="number" id="tp-x" placeholder="X" class="code-font tp-input-half" min="0"
+                                max="156">
+                            <input type="number" id="tp-y" placeholder="Y" class="code-font tp-input-half" min="0"
+                                max="156">
+                        </div>
+                        <button id="tp-btn" class="sys-btn tp-go">WARP</button>
+                        
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0, 240, 255, 0.2);">
+                            <h4 style="color: #00f0ff; margin-bottom: 10px; margin-top: 0;">Manual Coords Override</h4>
+                            <div class="tp-coords">
+                                <input type="number" id="set-coord-x" placeholder="Current X" class="code-font tp-input-half" min="0" max="255">
+                                <input type="number" id="set-coord-y" placeholder="Current Y" class="code-font tp-input-half" min="0" max="255">
+                            </div>
+                            <button id="set-coord-btn" class="sys-btn primary" style="margin-top: 10px;">SET COORDS</button>
+                        </div>
+                    </div>
+                    <div id="tp-status" class="tp-status-msg"></div>
+
+                    <div class="separator"></div>
+
+                    <h3>Actions</h3>
+                    <div class="btn-group">
+                        <button id="self-heal-btn" class="sys-btn primary">SELF BRIGHT HEAL</button>
+                        <button id="buffs-btn" class="sys-btn primary">CAST BISHOP BUFFS (ALL)</button>
+                        <button id="zimov-btn" class="sys-btn accent-b" disabled>FIGHT ZIMOV</button>
+                        <button id="heal-btn" class="sys-btn accent-b">HEAL @ KAKEULA</button>
+                        <button id="sell-btn" class="sys-btn accent-b">SELL LOOT @ KAKEULA</button>
+                        <button id="auto-zimov-btn" class="sys-btn primary" disabled>AUTO ZIMOV LOOP</button>
+                        <button id="auto-nemesis-btn" class="sys-btn primary" disabled>AUTO NEMESIS LOOP</button>
+                    </div>
+                    
+                    <h4 style="color: #6464ff; margin-bottom: 5px; margin-top: 15px;">Individual Buffs</h4>
+                    <div class="btn-group">
+                        <button id="buff-rev-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff;">REVELATION</button>
+                        <button id="buff-risp-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff;">RISPARMIO</button>
+                        <button id="buff-pre-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff;">PREIRE</button>
+                        <button id="buff-bless-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff;">BLESS</button>
+                    </div>
+                    
+                    <div id="zimov-status" class="tp-status-msg"></div>
+                </section>
+
+                <!-- Radar -->
+                <section class="panel radar">
+                    <h3>Radar Array</h3>
+                    <div style="position: relative; width: 100%; height: 300px; background: rgba(0,20,40,0.8); border: 1px solid #00f0ff; border-radius: 8px; overflow: hidden; margin-bottom: 10px;">
+                        <canvas id="radar-canvas" style="width: 100%; height: 100%;"></canvas>
+                        <div style="position: absolute; bottom: 10px; right: 10px; display: flex; gap: 5px;">
+                            <button id="zoom-in-btn" style="background: rgba(0,240,255,0.2); border: 1px solid #00f0ff; color: #00f0ff; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; font-weight: bold;">+</button>
+                            <button id="zoom-out-btn" style="background: rgba(0,240,255,0.2); border: 1px solid #00f0ff; color: #00f0ff; width: 30px; height: 30px; border-radius: 4px; cursor: pointer; font-weight: bold;">-</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button id="self-heal-btn-green" style="flex: 1; padding: 15px; background: rgba(0,255,100,0.2); border: 1px solid #00ff64; border-radius: 8px; color: #00ff64; font-weight: bold; cursor: pointer;">
+                            SELF BRIGHT HEAL
+                        </button>
+                        <button id="revive-btn" style="flex: 1; padding: 15px; background: rgba(255,50,50,0.2); border: 1px solid #ff3232; border-radius: 8px; color: #ff3232; font-weight: bold; cursor: pointer;">
+                            BACK TO TOWN (REVIVE)
+                        </button>
+                    </div>
+                    <div id="target-action-panel" style="display: none; padding: 10px; background: rgba(0, 50, 80, 0.6); border-radius: 8px; border: 1px solid #00f0ff;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span id="target-name" style="color: #00f0ff; font-weight: bold; font-size: 1.2em;">Target</span>
+                            <span id="target-dist" style="color: #ccc; font-size: 0.9em;"></span>
+                        </div>
+                        <div class="btn-group">
+                            <button id="cast-nemesis-btn" class="sys-btn primary">NEMESIS</button>
+                            <button id="party-invite-btn" class="sys-btn accent-b">INVITE TO PARTY</button>
+                        </div>
+                    </div>
+
+                    <h4 style="color: #00f0ff; margin-top: 20px; margin-bottom: 10px;">Nearby Players</h4>
+                    <div id="nearby-players-list" class="list-view" style="max-height: 150px;">
+                        <div class="inv-empty">No players nearby...</div>
+                    </div>
+                </section>
+
+                <!-- Party and Inventory Column -->
+                <div style="display: flex; flex-direction: column; gap: 20px; min-height: 0;">
+                
+                <!-- Party Panel -->
+                <section class="panel party-panel">
+                    <h3>Party System</h3>
+                    
+                    <div id="party-invite-alert" style="display: none; padding: 10px; background: rgba(0, 255, 100, 0.2); border: 1px solid #00ff64; border-radius: 8px; margin-bottom: 10px;">
+                        <span style="color: #00ff64; font-weight: bold;">[!] Party Invite Received!</span>
+                        <div style="margin-top: 5px; display: flex; gap: 5px;">
+                            <button id="accept-invite-btn" style="flex: 1; padding: 8px; background: #00ff64; color: #000; font-weight: bold; border: none; border-radius: 4px; cursor: pointer;">ACCEPT</button>
+                        </div>
+                    </div>
+
+                    <div id="party-members-list" class="list-view" style="margin-bottom: 10px;">
+                        <div class="inv-empty">Not in a party...</div>
+                    </div>
+                    
+                    <button id="party-leave-btn" class="sys-btn" style="background: rgba(255,50,50,0.2); border: 1px solid #ff3232; color: #ff3232;">LEAVE / DISBAND PARTY</button>
+                </section>
+
+                <!-- Inventory -->
+                <section class="panel inventory-panel">
+                    <h3>Inventory</h3>
+                    <div style="margin-bottom: 10px; color: #00f0ff;">Spina Earned: <span id="spina-earned"
+                            style="font-weight: bold; text-shadow: 0 0 5px #00f0ff;">0</span></div>
+                    <div id="inventory-list" class="list-view">
+                        <div class="inv-empty">No items loaded...</div>
+                    </div>
+                </section>
+                
+                </div>
+
+                <!-- Terminal logs -->
+                <section class="panel terminal-panel">
+                    <h3>Data Stream</h3>
+                    <div id="terminal" class="code-font">
+                    </div>
+                </section>
+            </div>
+        </main>
+
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
