@@ -140,8 +140,18 @@ def enter_world(sock, char_id_hex: str):
     if pre_move_sync: login_buffer += binascii.hexlify(pre_move_sync).decode()
 
     _send_and_log(sock, PKT_MOVEMENT_READY, "Movement Ready")
-    move_sync = hex_recv(sock, label="Movement Sync")
-    if move_sync: login_buffer += binascii.hexlify(move_sync).decode()
+    
+    # The server may send multiple packets here. We MUST wait for the 6002 ack!
+    while True:
+        move_sync = hex_recv(sock, label="Movement Sync")
+        if move_sync:
+            h = binascii.hexlify(move_sync).decode()
+            login_buffer += h
+            # The 6002 packet is huge, usually starts with something like 000002856002
+            # We look for "6002" appearing right after the 4-byte length prefix (which is 8 hex chars)
+            # Or just check if '6002' is in the payload. It's safe enough.
+            if "6002" in h:
+                break
 
     # Look for 0111 to override default spawn before we send 0110!
     _extract_0111_spawn(login_buffer)
