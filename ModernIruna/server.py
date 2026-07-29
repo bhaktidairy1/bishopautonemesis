@@ -366,8 +366,13 @@ def perform_action():
                 
                 time.sleep(1.0)
                 print("[*] Forcing position to safe spot (108, 180)...")
-                from core.map_teleport import teleport
-                teleport(client.sock, 700000, 108, 180)
+                state.player_x = 108.0
+                state.player_y = 180.0
+                
+                from core.packets import build_coord_packet
+                from core.map_teleport import _make_heartbeat_coords
+                coords = _make_heartbeat_coords(108, 180)
+                hex_send(client.sock, build_coord_packet(coords), "FORCE COORD")
                 
             except Exception as e:
                 print(f"[!] PT Area join error: {e}")
