@@ -364,6 +364,11 @@ def perform_action():
                 
                 print("[+] Successfully joined PT Area.")
                 
+                time.sleep(1.0)
+                print("[*] Forcing position to safe spot (108, 180)...")
+                from core.map_teleport import teleport
+                teleport(client.sock, 700000, 108, 180)
+                
             except Exception as e:
                 print(f"[!] PT Area join error: {e}")
                 

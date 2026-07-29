@@ -32,6 +32,11 @@ def create_and_enter_pt_area(sock, map_hex=None):
     hex_send(sock, "0002013a", "MAP_SYNC_ACK")
     hex_send(sock, build_warp_entry_packet(map_hex), "MAP_ENTRY")
     print("[+] Successfully entered PT Area.")
+    
+    # 8. Force position to a safe spot (108, 180) to avoid instantly pulling aggro
+    time.sleep(1.0)
+    print("[*] Forcing position to safe spot (108, 180)...")
+    teleport(sock, 700000, 108, 180)
 
 def auto_rejoin_pt_area_thread(sock):
     """
