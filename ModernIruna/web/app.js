@@ -177,6 +177,19 @@ document.addEventListener("DOMContentLoaded", () => {
         sendAction({type: "toggle_pause"});
     });
 
+    const disconnectBtn = document.getElementById("disconnect-btn");
+    if (disconnectBtn) {
+        disconnectBtn.addEventListener("click", () => {
+            if (confirm("Are you sure you want to gracefully close the connection?")) {
+                fetch("/api/disconnect", { method: "POST" })
+                    .then(() => {
+                        window.location.reload();
+                    })
+                    .catch(e => console.error(e));
+            }
+        });
+    }
+
     injectBtn.addEventListener("click", () => {
         const hex = hexInput.value;
         if(hex) {

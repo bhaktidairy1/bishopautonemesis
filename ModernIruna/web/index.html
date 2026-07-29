@@ -38,7 +38,10 @@
         <main id="dashboard-screen" class="glass-panel hidden">
             <header class="dash-head">
                 <h2>IRUNA <span class="accent">DASHBOARD</span></h2>
-                <div class="conn-status"><span class="pulse"></span> Connected</div>
+                <div class="conn-status" style="display: flex; align-items: center;">
+                    <span class="pulse"></span> Connected
+                    <button id="disconnect-btn" class="sys-btn warn" style="margin-left: 15px; padding: 5px 10px; font-size: 0.8em;">DISCONNECT</button>
+                </div>
             </header>
 
             <div class="grid-layout">

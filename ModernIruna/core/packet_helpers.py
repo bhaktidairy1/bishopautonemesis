@@ -30,6 +30,11 @@ def start_packet_log(log_dir=None):
     Call this after login to capture the full game session.
     """
     global _log_file, _log_filepath, _log_lines
+    import sys
+    if "--nolog" in sys.argv:
+        print("[*] Packet logging disabled via --nolog")
+        return None
+        
     with _log_lock:
         if log_dir is None:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

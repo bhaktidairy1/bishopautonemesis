@@ -17,6 +17,7 @@ load_mob_db()
 parser = argparse.ArgumentParser(description="Iruna Server")
 parser.add_argument("--minimal", action="store_true", help="Run the server with the minimal web UI")
 parser.add_argument("--url", type=str, help="Launch URL to auto-connect and auto-start")
+parser.add_argument("--nolog", action="store_true", help="Disable packet logging to disk")
 args = parser.parse_args()
 
 app = Flask(__name__, static_folder="web")
@@ -165,6 +166,18 @@ def api_party_accept():
     hex_send(client.sock, pkt, f"ACCEPT PARTY -> {uid}")
     
     state.pending_party_invite = None
+    return jsonify({"success": True})
+
+@app.route("/api/disconnect", methods=["POST"])
+def disconnect_client():
+    if client and client.sock:
+        try:
+            client.sock.close()
+        except Exception:
+            pass
+        client.sock = None
+        client.is_connected = False
+        print("[*] Connection closed manually via Web UI")
     return jsonify({"success": True})
 
 @app.route("/api/party/leave", methods=["POST"])
