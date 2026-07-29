@@ -56,6 +56,24 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             dashScreen.classList.remove("hidden");
             dashScreen.classList.add("active");
+            
+            // Fetch initial log history so the terminal isn't blank on refresh
+            fetch("/api/logs/history")
+            .then(r => r.json())
+            .then(data => {
+                if(data.logs && data.logs.length > 0) {
+                    terminal.innerHTML = "";
+                    data.logs.forEach(log => {
+                        let span = document.createElement("span");
+                        span.textContent = log;
+                        if(log.includes("←")) span.className = "log-recv";
+                        else if (log.includes("→")) span.className = "log-send";
+                        else if (log.includes("[!]")) span.className = "log-warn";
+                        terminal.appendChild(span);
+                    });
+                    terminal.scrollTop = terminal.scrollHeight;
+                }
+            });
         }, 100);
     }
 

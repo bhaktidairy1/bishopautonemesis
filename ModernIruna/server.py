@@ -24,6 +24,7 @@ CORS(app)
 
 # Buffer for sys.stdout redirection
 log_buffer = []
+log_history = []
 
 class WebLogRedirector:
     def __init__(self, original_stdout):
@@ -35,9 +36,16 @@ class WebLogRedirector:
         self.current_line += string
         while '\n' in self.current_line:
             line, self.current_line = self.current_line.split('\n', 1)
+            
+            # Temporary buffer for web polling
             if len(log_buffer) > 500:
                 log_buffer.pop(0)
             log_buffer.append(line + '\n')
+            
+            # Permanent history buffer for page reloads
+            if len(log_history) > 500:
+                log_history.pop(0)
+            log_history.append(line + '\n')
             
     def flush(self):
         self.original_stdout.flush()
@@ -272,6 +280,10 @@ def get_logs():
     logs_to_send = log_buffer[:]
     log_buffer = []  # clear after fetching to keep payload lightning fast
     return jsonify({"logs": logs_to_send})
+
+@app.route("/api/logs/history", methods=["GET"])
+def get_log_history():
+    return jsonify({"logs": log_history})
 
 @app.route("/api/action", methods=["POST"])
 def perform_action():
