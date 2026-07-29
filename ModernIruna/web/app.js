@@ -239,6 +239,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }).catch(e => console.error(e));
     });
 
+    document.getElementById("join-pt-area-btn").addEventListener("click", () => {
+        fetch("/api/action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "join_pt_area" })
+        }).then(r => r.json()).then(data => {
+            if (data.error) console.error(data.error);
+            else console.log("PT Area join initiated");
+        }).catch(e => console.error(e));
+    });
+
     // Heal Button
     const healBtn = document.getElementById("heal-btn");
     

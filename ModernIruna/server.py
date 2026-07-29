@@ -298,6 +298,58 @@ def perform_action():
         state.paused = not state.paused
         return jsonify({"success": True, "paused": state.paused})
         
+    elif action_type == "join_pt_area":
+        if not client.sock:
+            return jsonify({"error": "Not connected"}), 400
+            
+        from core.packet_helpers import hex_send
+        from core.packets import build_warp_entry_packet
+        import time
+        
+        def _join_pt_area():
+            try:
+                map_hex = getattr(state, 'current_map_hex', '00030d42')
+                if len(map_hex) < 8: map_hex = map_hex.zfill(8)
+                
+                print(f"[*] Initiating PT Area Join Sequence for Map {map_hex}...")
+                
+                # 1. Handshake 2
+                hex_send(client.sock, "0002b502", "PT_AREA_2")
+                time.sleep(0.4)
+                
+                # 2. Handshake 9
+                hex_send(client.sock, "0002b509", "PT_AREA_9")
+                time.sleep(1.2)
+                
+                state.map_ready_event.clear()
+                
+                # 3. Enter Area 
+                hex_send(client.sock, f"00120114000aae6000000000000000000000{map_hex}", "PT_AREA_ENTER")
+                
+                print("    [!] Waiting for Map Sync OK (b503)...")
+                if not state.map_ready_event.wait(timeout=10.0):
+                    print("[!] Timeout waiting for PT Area Map Sync OK.")
+                
+                time.sleep(0.1)
+                
+                # 4. Handshake 1
+                hex_send(client.sock, "0002b501", "PT_AREA_1")
+                time.sleep(0.2)
+                
+                # 5. Map Sync ACK
+                hex_send(client.sock, "0002013a", "MAP_SYNC_ACK")
+                
+                # 6. Map Entry Exit 
+                hex_send(client.sock, build_warp_entry_packet(map_hex), "MAP_ENTRY")
+                
+                print("[+] Successfully joined PT Area.")
+                
+            except Exception as e:
+                print(f"[!] PT Area join error: {e}")
+                
+        threading.Thread(target=_join_pt_area, daemon=True).start()
+        return jsonify({"success": True})
+
     elif action_type == "create_pt_area":
         if not client.sock:
             return jsonify({"error": "Not connected"}), 400
