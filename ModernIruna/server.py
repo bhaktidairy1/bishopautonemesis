@@ -324,7 +324,7 @@ def perform_action():
                 state.map_ready_event.clear()
                 
                 # 3. Enter Area 
-                hex_send(client.sock, f"00120114000aae6000000000000000000000{map_hex}", "PT_AREA_ENTER")
+                hex_send(client.sock, f"00120114000aae600000000000000000{map_hex}", "PT_AREA_ENTER")
                 
                 print("    [!] Waiting for Map Sync OK (b503)...")
                 if not state.map_ready_event.wait(timeout=10.0):
@@ -384,8 +384,8 @@ def perform_action():
                 state.map_ready_event.clear()
                 
                 # 4. Enter Area 
-                # Packet: 0012 0114 000aae60 00000000000000000000 + map_hex
-                hex_send(client.sock, f"00120114000aae6000000000000000000000{map_hex}", "PT_AREA_ENTER")
+                # Packet: 0012 0114 000aae60 0000000000000000 + map_hex
+                hex_send(client.sock, f"00120114000aae600000000000000000{map_hex}", "PT_AREA_ENTER")
                 
                 # Wait for Map Ready (0138 / b503)
                 print("    [!] Waiting for Map Sync OK (b503)...")
