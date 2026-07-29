@@ -20,6 +20,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let isConnected = false;
     let pollInterval = null;
+    
+    // Fetch version on load
+    fetch("/api/state")
+        .then(r => r.json())
+        .then(data => {
+            const verEl = document.getElementById("app-version");
+            if (verEl && data.version) {
+                verEl.textContent = `Version: ${data.version}`;
+            }
+        }).catch(() => {});
 
     // --- Login ---
     connectBtn.addEventListener("click", () => {

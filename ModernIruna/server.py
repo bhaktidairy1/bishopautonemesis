@@ -109,7 +109,14 @@ def connect_iruna():
 
 @app.route("/api/state", methods=["GET"])
 def get_state():
+    try:
+        import subprocess
+        commit_hash = subprocess.check_output(['git', 'log', '-1', '--format=%h - %s']).decode('utf-8').strip()
+    except Exception:
+        commit_hash = "Unknown Version"
+
     return jsonify({
+        "version": commit_hash,
         "connected": client.is_connected,
         "mode": state.mode,
         "paused": state.paused,
