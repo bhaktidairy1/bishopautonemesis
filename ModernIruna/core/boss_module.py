@@ -475,14 +475,22 @@ def auto_nemesis_loop(sock):
                 time.sleep(6.0) # Wait for 0111 and map sync to finish
                 
                 print(f"[*] Warping back to farm spot (Map {start_map_id})...")
-                teleport(sock, start_map_id, start_x, start_y)
+                res = teleport(sock, start_map_id, start_x, start_y)
+                if not res or res.get("status") != "success":
+                    print("[!] Failed to warp back to farm spot (instance expired?). Stopping Auto-Nemesis.")
+                    state.auto_nemesis_running = False
+                    break
                 time.sleep(2.0)
                 continue
 
             # 0.5 Check if we accidentally changed maps
             if state.current_map_hex and int(state.current_map_hex, 16) != start_map_id:
                 print(f"[*] Map changed unexpectedly. Warping back to {start_map_id}...")
-                teleport(sock, start_map_id, start_x, start_y)
+                res = teleport(sock, start_map_id, start_x, start_y)
+                if not res or res.get("status") != "success":
+                    print("[!] Failed to warp back to farm spot (instance expired?). Stopping Auto-Nemesis.")
+                    state.auto_nemesis_running = False
+                    break
                 time.sleep(2.0)
                 continue
 
