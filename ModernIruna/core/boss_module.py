@@ -463,6 +463,7 @@ def auto_nemesis_loop(sock):
             "preire": 0,
             "bless": 0
         }
+        holy_spike_timers = {}
         
         while state.auto_nemesis_running:
             # 0. Check Death
@@ -565,6 +566,19 @@ def auto_nemesis_loop(sock):
             hex_send(sock, coord_pkt, "RADAR TARGET")
             
             state.waiting_for_hit.clear()
+            
+            # 3.5 Check Holy Spike
+            now = time.time()
+            last_spike = holy_spike_timers.get(nearest_uid, 0)
+            if now - last_spike > 33: # 35s duration
+                print(f"[*] Casting Holy Spike on {target.get('name', nearest_uid)}...")
+                spike_hex = "1cd8"
+                spike_cast = build_skill_cast_packet(spike_hex, nearest_uid)
+                hex_send(sock, spike_cast, "HOLY SPIKE CAST")
+                spike_exec = f"000a0141{spike_hex}0101{nearest_uid}"
+                hex_send(sock, spike_exec, "HOLY SPIKE EXECUTE")
+                holy_spike_timers[nearest_uid] = now
+                time.sleep(0.5) # small delay before nemesis
             
             # Nemesis Skill ID: 138f, Flag: 0101
             skill_hex = "138f"
