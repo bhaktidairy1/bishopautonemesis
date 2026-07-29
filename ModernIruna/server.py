@@ -380,54 +380,8 @@ def perform_action():
         
         def _create_and_enter_pt_area():
             try:
-                map_hex = getattr(state, 'current_map_hex', '00030d42')
-                # ensure 8 chars
-                if len(map_hex) < 8: map_hex = map_hex.zfill(8)
-                
-                print(f"[*] Initiating PT Area Sequence for Map {map_hex}...")
-                
-                # 1. Create Area (e.g. 0006b500 00030d42)
-                hex_send(client.sock, f"0006b500{map_hex}", "PT_AREA_CREATE")
-                time.sleep(0.4)
-                
-                # S->C Sends: b507 -> b506 -> 
-                # (We don't strictly have to wait, but matching timing helps)
-                
-                # 2. Handshake 2
-                hex_send(client.sock, "0002b502", "PT_AREA_2")
-                time.sleep(0.4)
-                
-                # 3. Handshake 9
-                hex_send(client.sock, "0002b509", "PT_AREA_9")
-                time.sleep(1.2)
-                
-                state.map_ready_event.clear()
-                
-                # 4. Enter Area 
-                # Packet: 0012 0114 000aae60 0000000000000000 + map_hex
-                hex_send(client.sock, f"00120114000aae600000000000000000{map_hex}", "PT_AREA_ENTER")
-                
-                # Wait for Map Ready (0138 / b503)
-                print("    [!] Waiting for Map Sync OK (b503)...")
-                if not state.map_ready_event.wait(timeout=10.0):
-                    print("[!] Timeout waiting for PT Area Map Sync OK.")
-                    # continue anyway to try and unstuck
-                
-                time.sleep(0.1)
-                
-                # 5. Handshake 1
-                hex_send(client.sock, "0002b501", "PT_AREA_1")
-                time.sleep(0.2)
-                
-                # 6. Map Sync ACK
-                hex_send(client.sock, "0002013a", "MAP_SYNC_ACK")
-                
-                # 7. Map Entry Exit 
-                # e.g. 000f3002 11000000000000000000 + map_hex
-                hex_send(client.sock, build_warp_entry_packet(map_hex), "MAP_ENTRY")
-                
-                print("[+] Successfully entered PT Area.")
-                
+                from core.pt_area import create_and_enter_pt_area
+                create_and_enter_pt_area(client.sock)
             except Exception as e:
                 print(f"[!] PT Area error: {e}")
                 

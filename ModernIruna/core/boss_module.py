@@ -474,25 +474,40 @@ def auto_nemesis_loop(sock):
                 print("[*] Waiting to arrive in town...")
                 time.sleep(6.0) # Wait for 0111 and map sync to finish
                 
-                print(f"[*] Warping back to farm spot (Map {start_map_id})...")
-                res = teleport(sock, start_map_id, start_x, start_y)
-                if not res or res.get("status") != "success":
-                    print("[!] Failed to warp back to farm spot (instance expired?). Stopping Auto-Nemesis.")
-                    state.auto_nemesis_running = False
-                    break
-                time.sleep(2.0)
-                continue
+                if start_map_id == 700000:
+                    print("[*] Died in PT Area. Auto-rejoining...")
+                    from core.pt_area import auto_rejoin_pt_area_thread
+                    auto_rejoin_pt_area_thread(sock)
+                    continue
+                else:
+                    print(f"[*] Warping back to farm spot (Map {start_map_id})...")
+                    res = teleport(sock, start_map_id, start_x, start_y)
+                    if not res or res.get("status") != "success":
+                        print("[!] Failed to warp back to farm spot (instance expired?). Stopping Auto-Nemesis.")
+                        state.auto_nemesis_running = False
+                        break
+                    time.sleep(2.0)
+                    continue
 
             # 0.5 Check if we accidentally changed maps
             if state.current_map_hex and int(state.current_map_hex, 16) != start_map_id:
-                print(f"[*] Map changed unexpectedly. Warping back to {start_map_id}...")
-                res = teleport(sock, start_map_id, start_x, start_y)
-                if not res or res.get("status") != "success":
-                    print("[!] Failed to warp back to farm spot (instance expired?). Stopping Auto-Nemesis.")
-                    state.auto_nemesis_running = False
-                    break
-                time.sleep(2.0)
-                continue
+                if start_map_id == 700000:
+                    print("[*] PT Area expired! Waiting for background thread to re-create it...")
+                    while state.current_map_hex != "000aae60" and state.auto_nemesis_running:
+                        time.sleep(1.0)
+                    if not state.auto_nemesis_running:
+                        break
+                    print("[*] Successfully resumed Auto-Nemesis in new PT Area!")
+                    continue
+                else:
+                    print(f"[*] Map changed unexpectedly. Warping back to {start_map_id}...")
+                    res = teleport(sock, start_map_id, start_x, start_y)
+                    if not res or res.get("status") != "success":
+                        print("[!] Failed to warp back to farm spot (instance expired?). Stopping Auto-Nemesis.")
+                        state.auto_nemesis_running = False
+                        break
+                    time.sleep(2.0)
+                    continue
 
             # 1. Check MP
             if getattr(state, "player_mp", 0) < 1000:

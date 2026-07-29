@@ -38,6 +38,8 @@ def _handle_map_sync_internal(payload: bytes, success: bool):
     Clears existing monsters since we are in a new location.
     """
     try:
+        previous_map = getattr(state, 'current_map_hex', None)
+        
         raw_map = binascii.hexlify(payload[1:5]).decode()
         raw_x = int.from_bytes(payload[5:9], "big")
         raw_y = int.from_bytes(payload[9:13], "big")
@@ -68,6 +70,15 @@ def _handle_map_sync_internal(payload: bytes, success: bool):
         
         status = "SUCCESS" if success else "REJECTED/OVERRIDE"
         print(f"\n[!] MAP SYNC ({status}): Map {raw_map} | Coords {shifted_x}{shifted_y}")
+        
+        # Auto-rejoin PT Area if we were kicked from it (000aae60 -> anything else via rejection)
+        if not success and previous_map == "000aae60" and raw_map != "000aae60":
+            print("[!] PT Area Instance Expired! Spawning background thread to auto-rejoin...")
+            from core.pt_area import auto_rejoin_pt_area_thread
+            from core.client import client
+            import threading
+            threading.Thread(target=auto_rejoin_pt_area_thread, args=(client.sock,), daemon=True).start()
+            
     except Exception as e:
         print(f"[!] Sync Parse Error: {e}")
 
