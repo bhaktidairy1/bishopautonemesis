@@ -21,6 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let isConnected = false;
     let pollInterval = null;
     
+    // Always poll logs so they show up on login screen too
+    setInterval(fetchLogs, 500);
+    
     // Fetch version on load
     fetch("/api/state")
         .then(r => r.json())
@@ -48,7 +51,6 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(data => {
             // fast-polling state
             pollInterval = setInterval(fetchState, 500); 
-            setInterval(fetchLogs, 500);
         })
         .catch(err => {
             statusMsg.textContent = "Fatal: Server unverified.";
@@ -112,7 +114,10 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(r => r.json())
         .then(data => {
             if(data.logs && data.logs.length > 0) {
-                let isScrolledToBottom = terminal.scrollHeight - terminal.clientHeight <= terminal.scrollTop + 1;
+                const loginTerminal = document.getElementById("login-terminal");
+                
+                let isScrolledToBottom = terminal ? (terminal.scrollHeight - terminal.clientHeight <= terminal.scrollTop + 1) : false;
+                let isLoginScrolled = loginTerminal ? (loginTerminal.scrollHeight - loginTerminal.clientHeight <= loginTerminal.scrollTop + 1) : false;
                 
                 data.logs.forEach(log => {
                     let span = document.createElement("span");
@@ -121,16 +126,31 @@ document.addEventListener("DOMContentLoaded", () => {
                     else if (log.includes("→")) span.className = "log-send";
                     else if (log.includes("[!]")) span.className = "log-warn";
                     
-                    terminal.appendChild(span);
+                    if (terminal) terminal.appendChild(span);
+                    
+                    if (loginTerminal) {
+                        let spanClone = span.cloneNode(true);
+                        loginTerminal.appendChild(spanClone);
+                    }
                 });
 
                 // Cap logs to prevent infinite DOM memory usage (browser crash)
-                while(terminal.childNodes.length > 500) {
-                    terminal.removeChild(terminal.firstChild);
+                if (terminal) {
+                    while(terminal.childNodes.length > 500) {
+                        terminal.removeChild(terminal.firstChild);
+                    }
+                    if(isScrolledToBottom) {
+                        terminal.scrollTop = terminal.scrollHeight;
+                    }
                 }
-
-                if(isScrolledToBottom) {
-                    terminal.scrollTop = terminal.scrollHeight;
+                
+                if (loginTerminal) {
+                    while(loginTerminal.childNodes.length > 500) {
+                        loginTerminal.removeChild(loginTerminal.firstChild);
+                    }
+                    if (isLoginScrolled) {
+                        loginTerminal.scrollTop = loginTerminal.scrollHeight;
+                    }
                 }
             }
         });
@@ -739,7 +759,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Already connected. Auto-resuming dashboard.");
             statusMsg.textContent = "Session restored.";
             pollInterval = setInterval(fetchState, 500); 
-            setInterval(fetchLogs, 500);
             transitionToDashboard();
             fetchState();
         }
