@@ -529,7 +529,7 @@ def auto_nemesis_loop(sock):
                 # Filter strictly to Moss Golems as requested (or its raw ID if DB is missing)
                 name = m.get('name', '')
                 mob_id = m.get('id', 0)
-                if "Moss Golem" not in name and mob_id != 20000282 and "20000282" not in name:
+                if "Moss Golem" not in name and not str(mob_id).startswith("2000028") and "2000028" not in name:
                     continue
                     
                 mx = m.get('x', 0)
