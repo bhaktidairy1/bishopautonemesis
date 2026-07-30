@@ -170,21 +170,29 @@ def enter_world(sock, char_id_hex: str):
         state.last_map_coords[4:]
     )
     _send_and_log(sock, map_data, "Map Data")
-    hex_recv(sock, label="Ack for Position")
 
-    # Step 10: Resend Position — server responds with b503 containing spawn coords
+    # Step 10: Resend Position
     _send_and_log(sock, PKT_MAP_SYNC_BEGIN, "Resend Position")
-    extra_data = hex_recv(sock, label="Extra State Data")
-    _parse_spawn_coords(extra_data)
 
     # Step 11: Magic Bundle (Visuals + Sync Start + Motion Triggers)
     for pkt in PKT_MAGIC_BUNDLE:
-        _send_and_log(sock, pkt, "Magic Bundle Pkt")
+        _send_and_log(sock, pkt, "Magic Bundle Pkt", delay=0.01)
 
-    # The server responds with Map Sync Ack and then b503 Map Sync
-    hex_recv(sock, label="Ack for Position")
-    extra_data = hex_recv(sock, label="Extra State Data (b503)")
-    _parse_spawn_coords(extra_data)
+    # Now we read the server's responses (013a, b503, 0240, etc.)
+    # We'll set a short timeout and read until it times out.
+    old_timeout = sock.gettimeout()
+    sock.settimeout(1.0)
+    try:
+        while True:
+            chunk = hex_recv(sock, label="Map Entry Sync")
+            login_buffer += binascii.hexlify(chunk).decode()
+    except Exception:
+        pass # timeout reached, we've received everything the server sent
+    finally:
+        sock.settimeout(old_timeout)
+
+    # Parse b503 from the entire buffer
+    _parse_spawn_coords(binascii.unhexlify(login_buffer.encode()))
 
     # Step 12: Map Entry
     _send_and_log(sock, PKT_BULK_HEADER, "Bulk Header (3002)")
