@@ -22,6 +22,7 @@ class GameState:
         self.map_name = "Miscerene Plains"
         self.teleport_event = threading.Event()
         self.teleport_success = False
+        self.is_reviving = False
         self.map_ready_event = threading.Event()
         self.map_data_event = threading.Event()
         self.check_alive_event = threading.Event()

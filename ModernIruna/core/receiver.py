@@ -393,7 +393,7 @@ def handle_0242_attack(payload: bytes):
             mob_name = "Monster"
             if attacker in state.monsters:
                 mob_name = state.monsters[attacker]['name']
-            print(f"[*] {mob_name} hit us for {damage} damage! HP: {current_hp}")
+            print(f"[*] {mob_name} hit us for {damage} damage! HP: {state.player_hp}")
 
 # ════════════════════════════════════════════
 #  PARTY PACKET HANDLERS

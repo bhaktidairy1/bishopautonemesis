@@ -6,6 +6,7 @@ Two daemon threads:
   - combat_engine: auto-attack loop with target selection
 """
 import time
+import threading
 
 from core.game_state import state
 from core.packet_helpers import hex_send
@@ -25,6 +26,8 @@ def coordinate_sender(sock):
     ticks = 0
     while not state.stop_event.is_set():
         if state.paused or state.in_scripted_sequence or state.player_hp == 0:
+            if state.player_hp == 0 and not state.paused and not getattr(state, "is_reviving", False):
+                threading.Thread(target=do_auto_revive, args=(sock,), daemon=True).start()
             time.sleep(0.5)
             continue
             
@@ -59,6 +62,31 @@ def coordinate_sender(sock):
             break
             
         time.sleep(1.0)
+
+
+def do_auto_revive(sock):
+    if state.is_reviving:
+        return
+    state.is_reviving = True
+    print("[*] Player died! Initiating auto-revive sequence...")
+    hex_send(sock, "00020134", "REVIVE REQUEST")
+    
+    print("[*] Waiting to arrive in town...")
+    time.sleep(6.0) # Wait for 0111 and map sync to finish
+    
+    # Check if we were in the PT area previously (Map 2707 usually, but we check if we have pt area coords in memory or something).
+    # Since we don't have a strict flag, we'll just check if the last map was a PT Area map (starts with 0a).
+    # Actually, pt area maps are instanced versions of 700000 or similar.
+    # The user requested: "join pta again if char was in pta"
+    # The Boss module checks start_map_id == 700000. We will check if the map was 700000 or 0aXX.
+    # Actually, we can just safely always check if we should auto-rejoin based on if pt_area was used.
+    # We will just do a simple check. If the map before we died was a PT Area map (starts with '0a' or '000ab', we'll re-join).
+    if getattr(state, "current_map_hex", "").startswith("0a"):
+        print("[*] Died in PT Area. Auto-rejoining...")
+        from core.pt_area import auto_rejoin_pt_area_thread
+        auto_rejoin_pt_area_thread(sock)
+        
+    state.is_reviving = False
 
 
 def combat_engine(sock):
