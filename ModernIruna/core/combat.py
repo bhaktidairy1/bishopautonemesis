@@ -27,7 +27,9 @@ def coordinate_sender(sock):
     while not state.stop_event.is_set():
         if state.paused or state.in_scripted_sequence or state.player_hp == 0:
             if state.player_hp == 0 and not state.paused and not getattr(state, "is_reviving", False):
-                threading.Thread(target=do_auto_revive, args=(sock,), daemon=True).start()
+                # Don't trigger global revive if auto nemesis is handling it
+                if not getattr(state, "auto_nemesis_running", False):
+                    threading.Thread(target=do_auto_revive, args=(sock,), daemon=True).start()
             time.sleep(0.5)
             continue
             
