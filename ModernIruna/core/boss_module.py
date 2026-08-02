@@ -116,8 +116,10 @@ def zimov_battle_thread(sock):
             cast_pkt = BACKSTAB_CAST_PREFIX + state.boss_id_hex
             hex_send(sock, cast_pkt)
             
-            # 000e01484e210102 + Boss UID + 000000b4 (max dmg flag)
-            dmg_pkt = BACKSTAB_DAMAGE_PREFIX + state.boss_id_hex + "000000b4"
+            # The client sends the angle of the backstab at the end, 
+            # e.g. 00000000 or 000000b3. 
+            # The previous '000000b4' flag was triggering a simultaneous fatal response from the boss.
+            dmg_pkt = BACKSTAB_DAMAGE_PREFIX + state.boss_id_hex + "00000000"
             hex_send(sock, dmg_pkt)
             
             # Wait for boss death confirmation / drops
