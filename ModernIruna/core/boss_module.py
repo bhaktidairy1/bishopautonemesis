@@ -99,7 +99,8 @@ def zimov_battle_thread(sock):
         do_warp_sync(sock, "3e1c", "3e58", "4300", "7c00", portal_id="02")
         
         # Step 2: 3e58 -> 3e76 (Boss coords roughly 4400 8300 from logs, portal 04)
-        do_warp_sync(sock, "3e58", "3e76", "4400", "8300", portal_id="04", wait_3003=False)
+        # We wait for 3003 (Map Data) here. 3003 is the final map initialization packet.
+        do_warp_sync(sock, "3e58", "3e76", "4400", "8300", portal_id="04", wait_3003=True)
         
         # Step 3: Wait for Boss Spawn (receiver.py catches 0248/0245)
         print("\n[*] Waiting for Zimov to spawn...")
@@ -108,7 +109,7 @@ def zimov_battle_thread(sock):
             log_and_exit("Boss spawn timeout! (Waited 10s for 0248/0245)")
         else:
             print(f"[+] Zimov Spawned! UID: {state.boss_id_hex}")
-            time.sleep(0.2) # Wait 0.2s before strike
+            # No arbitrary sleep needed! The 3003 packet guarantees the map is fully loaded on the server.
             
             # Step 4: Backstab
             print("[*] Executing Backstab Sequence...")
