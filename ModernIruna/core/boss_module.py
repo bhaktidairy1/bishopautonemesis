@@ -111,23 +111,14 @@ def zimov_battle_thread(sock):
             time.sleep(0.2) # Wait 0.2s before strike
             
             # Step 4: Backstab
-            # Step 4: Pull Boss with Auto-Attack
-            print("[*] Pulling Boss with Auto-Attack...")
-            # 000a014300000100 + Boss UID
-            auto_attack_pkt = "000a014300000100" + state.boss_id_hex
-            hex_send(sock, auto_attack_pkt, "AUTO_ATTACK")
-            
-            # Wait for boss to run to us
-            time.sleep(0.5)
-                
             print("[*] Executing Backstab Sequence...")
             # 000a01431b870102 + Boss UID
             cast_pkt = BACKSTAB_CAST_PREFIX + state.boss_id_hex
             hex_send(sock, cast_pkt, "BACKSTAB_CAST")
             
             # The client sends the angle of the backstab at the end
-            # Using '000000a2' from the provided proxy log
-            dmg_pkt = BACKSTAB_DAMAGE_PREFIX + state.boss_id_hex + "000000a2"
+            # Reverting back to b4 as per user request
+            dmg_pkt = BACKSTAB_DAMAGE_PREFIX + state.boss_id_hex + "000000b4"
             hex_send(sock, dmg_pkt, "BACKSTAB_DAMAGE")
             
             # Wait for boss death confirmation / drops
