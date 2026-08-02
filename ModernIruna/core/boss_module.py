@@ -118,9 +118,9 @@ def zimov_battle_thread(sock):
                 
                 # We teleported to the portal, so we are out of melee range!
                 # Send our coords exactly to boss coords so the server allows the Backstab.
-                # Adding +1 to Y to theoretically be "behind" him
+                # Adding +6 to Y to theoretically be "behind" him
                 tx = format(int(bx * 256) & 0xFFFF, '04x')
-                ty = format(int((by + 1.0) * 256) & 0xFFFF, '04x')
+                ty = format(int((by + 6.0) * 256) & 0xFFFF, '04x')
                 hex_send(sock, f"00060101{tx}{ty}", "MOVE_TO_BOSS")
                 time.sleep(0.2)
                 
