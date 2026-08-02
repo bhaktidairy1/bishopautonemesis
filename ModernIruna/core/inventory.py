@@ -174,18 +174,12 @@ def is_stackable(item_id: int) -> bool:
 def calculate_bag_usage():
     """
     Returns the total number of physical item slots taken up in the bag (max 50).
-    Stackable items take 1 slot per 99 count. Unstackable items (equipments) take 1 slot per 1 count.
+    Rather than doing math on counts, we just count the physical instances 
+    provided by the server's 0120 sync, which is perfectly accurate even if parsing is fuzzy.
     """
     slots_used = 0
     for item_data in state.inventory.values():
-        total_count = sum(s["count"] for s in item_data.get("slots", []) if s["count"] > 0)
-        if total_count <= 0:
-            continue
-            
-        if is_stackable(item_data["id"]):
-            slots_used += math.ceil(total_count / 99.0)
-        else:
-            slots_used += total_count
+        slots_used += len(item_data.get("slots", []))
             
     return slots_used
 
