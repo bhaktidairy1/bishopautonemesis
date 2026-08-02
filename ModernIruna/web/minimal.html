@@ -112,7 +112,7 @@
                     
                     data.logs.forEach(log => {
                         let span = document.createElement("span");
-                        span.textContent = log + "\\n";
+                        span.textContent = log + "\n";
                         if (log.includes("<-")) span.style.color = "#0f0";
                         else if (log.includes("->")) span.style.color = "#ff0";
                         else if (log.includes("[!]")) span.style.color = "#f00";

@@ -33,7 +33,11 @@ class WebLogRedirector:
         self.current_line = ""
 
     def write(self, string):
-        self.original_stdout.write(string)
+        try:
+            self.original_stdout.write(string)
+        except UnicodeEncodeError:
+            self.original_stdout.write(string.encode('ascii', errors='replace').decode('ascii'))
+            
         self.current_line += string
         while '\n' in self.current_line:
             line, self.current_line = self.current_line.split('\n', 1)
