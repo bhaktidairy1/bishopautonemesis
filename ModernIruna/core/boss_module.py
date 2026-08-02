@@ -111,6 +111,19 @@ def zimov_battle_thread(sock):
             time.sleep(0.2) # Wait 0.2s before strike
             
             # Step 4: Backstab
+            print("[*] Moving to Boss coordinates for Backstab...")
+            if state.boss_id_hex in state.monsters:
+                bx = state.monsters[state.boss_id_hex]['x']
+                by = state.monsters[state.boss_id_hex]['y']
+                
+                # We teleported to the portal, so we are out of melee range!
+                # Send our coords exactly to boss coords so the server allows the Backstab.
+                # Adding +1 to Y to theoretically be "behind" him
+                tx = format(int(bx * 256) & 0xFFFF, '04x')
+                ty = format(int((by + 1.0) * 256) & 0xFFFF, '04x')
+                hex_send(sock, f"00060101{tx}{ty}", "MOVE_TO_BOSS")
+                time.sleep(0.2)
+                
             print("[*] Executing Backstab Sequence...")
             # 000a01431b870102 + Boss UID
             cast_pkt = BACKSTAB_CAST_PREFIX + state.boss_id_hex
