@@ -100,10 +100,11 @@ def connect_iruna():
                 # Short buffer to ensure environment is stabilized
                 time.sleep(2)
                 
-                print("[*] World loaded. (Auto-Zimov DISABLED for Radar testing)")
-                #from core.boss_module import auto_zimov_loop
-                # Start the loop in this thread
-                #auto_zimov_loop(client.sock)
+                print("[*] World loaded. Auto-starting Zimov...")
+                if not getattr(state, "auto_nemesis_running", False):
+                    from core.boss_module import auto_zimov_loop
+                    # Start the loop in this thread
+                    auto_zimov_loop(client.sock)
 
     threading.Thread(target=background_connect, daemon=True).start()
     return jsonify({"status": "Connecting..."})
