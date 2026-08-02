@@ -214,16 +214,25 @@ def enter_world(sock, char_id_hex: str):
 
     # Step 14: Summon Pet
     import re
-    # The new pet structure is usually preceded by an `a102` opcode, but we can still look through the buffer.
-    # The buffer regex looks for: a102 followed by the 8-char UID.
-    pet_match = re.search(r"a102([0-9a-f]{8})0065000841", login_buffer, re.IGNORECASE)
-    if not pet_match:
-        # Fallback to the old regex
-        pet_match = re.search(r"([0-9a-f]{8})006400[0-9a-f]{2}", login_buffer, re.IGNORECASE)
-        
-    if pet_match:
-        state.pet_uid_hex = pet_match.group(1)
-        print(f"[+] Found Pet! UID: {state.pet_uid_hex}")
+    pet_uid = None
+    
+    # Method 1: Look for the a100 pet info structure in the login buffer
+    # Format: a100...01[pet_uid 8 hex]0065 (level 101 in hex = 0x65)
+    # or more generally: a100 followed by zeros, then 01, then 8-char uid
+    a100_match = re.search(r"a100[0-9a-f]*?01([0-9a-f]{8})00(?:64|65)", login_buffer, re.IGNORECASE)
+    if a100_match:
+        pet_uid = a100_match.group(1)
+        print(f"[+] Found Pet (a100)! UID: {pet_uid}")
+    
+    # Method 2: Look for a102 opcode directly (sometimes embedded in response)
+    if not pet_uid:
+        a102_match = re.search(r"a102([0-9a-f]{8})", login_buffer, re.IGNORECASE)
+        if a102_match:
+            pet_uid = a102_match.group(1)
+            print(f"[+] Found Pet (a102)! UID: {pet_uid}")
+    
+    if pet_uid:
+        state.pet_uid_hex = pet_uid
         _send_and_log(sock, PKT_SUMMON_PET + state.pet_uid_hex, "Summon Pet")
     else:
         print("[-] No pets found in login sequence.")

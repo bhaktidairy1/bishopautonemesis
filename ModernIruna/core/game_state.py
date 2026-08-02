@@ -44,5 +44,11 @@ class GameState:
         self.boss_id_hex = None
         self.boss_spawn_event = threading.Event()
         self.boss_death_event = threading.Event()
+        
+        # Island Mode
+        self.is_island_mode = False
+        self.in_island_map = False
+        self.stall_items = []
+        self.island_list = []
 
 state = GameState()

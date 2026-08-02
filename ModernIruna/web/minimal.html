@@ -21,7 +21,7 @@
 
     <div id="status-section" class="section" style="display: none;">
         <h3>1. Status & Stats</h3>
-        <p>Connection: <strong id="conn-status">Checking...</strong></p>
+        <p>Connection: <strong id="conn-status">Checking...</strong> <button style="background: #222; color: #f00; border-color: #f00; margin-left: 10px;" onclick="disconnectBot()">DISCONNECT</button></p>
         <p>Loop Status: <strong id="auto-status">Unknown</strong></p>
         <p>Map: <span id="map-name">Unknown</span></p>
         <p>Total Runs (7x+Heal): <span id="run-count">0</span></p>
@@ -34,7 +34,16 @@
         <ul id="inventory-list"></ul>
     </div>
 
+    <div class="section" id="terminal-section" style="display: none; height: 300px; overflow-y: auto; background: #111; padding: 10px; border: 1px solid #0f0;">
+        <h3>3. Data Stream</h3>
+        <div id="terminal" style="font-size: 0.85em; white-space: pre-wrap; word-break: break-all;"></div>
+    </div>
+
     <script>
+        let pollInterval;
+        let logPollInterval;
+        let isConnected = false;
+
         function connectBot() {
             const url = document.getElementById("auth-url").value;
             if(!url) return alert("Please enter a URL");
@@ -46,14 +55,37 @@
             });
             document.getElementById("login-section").style.display = "none";
             document.getElementById("status-section").style.display = "block";
+            document.getElementById("terminal-section").style.display = "block";
+            
+            pollInterval = setInterval(fetchState, 1000);
+            logPollInterval = setInterval(fetchLogs, 1000);
         }
 
-        setInterval(() => {
+        function disconnectBot() {
+            fetch("/api/disconnect", { method: "POST" })
+            .then(() => {
+                clearInterval(pollInterval);
+                clearInterval(logPollInterval);
+                isConnected = false;
+                document.getElementById("login-section").style.display = "block";
+                document.getElementById("status-section").style.display = "none";
+                document.getElementById("terminal-section").style.display = "none";
+                document.getElementById('conn-status').innerText = 'Disconnected';
+            });
+        }
+
+        function fetchState() {
             fetch('/api/state').then(r=>r.json()).then(data => {
-                if (data.connected) {
+                if (data.connected && !isConnected) {
+                    isConnected = true;
                     document.getElementById("login-section").style.display = "none";
                     document.getElementById("status-section").style.display = "block";
+                    document.getElementById("terminal-section").style.display = "block";
+                    
+                    if (!pollInterval) pollInterval = setInterval(fetchState, 1000);
+                    if (!logPollInterval) logPollInterval = setInterval(fetchLogs, 1000);
                 }
+                
                 document.getElementById('conn-status').innerText = data.connected ? 'Connected' : 'Disconnected';
                 document.getElementById('auto-status').innerText = data.auto_zimov_running ? 'Running' : 'Stopped';
                 document.getElementById('run-count').innerText = data.auto_zimov_run_count || 0;
@@ -70,7 +102,35 @@
                 }
                 document.getElementById('inventory-list').innerHTML = invHtml;
             }).catch(e => console.log('State fetch failed', e));
-        }, 1000); // 1s polling is very light for local
+        }
+
+        function fetchLogs() {
+            fetch("/api/logs").then(r => r.json()).then(data => {
+                if (data.logs && data.logs.length > 0) {
+                    const terminal = document.getElementById("terminal");
+                    let isScrolledToBottom = (terminal.parentElement.scrollHeight - terminal.parentElement.clientHeight <= terminal.parentElement.scrollTop + 1);
+                    
+                    data.logs.forEach(log => {
+                        let span = document.createElement("span");
+                        span.textContent = log + "\\n";
+                        if (log.includes("<-")) span.style.color = "#0f0";
+                        else if (log.includes("->")) span.style.color = "#ff0";
+                        else if (log.includes("[!]")) span.style.color = "#f00";
+                        terminal.appendChild(span);
+                    });
+
+                    while (terminal.childNodes.length > 500) {
+                        terminal.removeChild(terminal.firstChild);
+                    }
+                    if (isScrolledToBottom) {
+                        terminal.parentElement.scrollTop = terminal.parentElement.scrollHeight;
+                    }
+                }
+            }).catch(e => console.log('Log fetch failed', e));
+        }
+
+        // Start polling state in case we refresh while already connected
+        fetchState();
     </script>
 </body>
 </html>

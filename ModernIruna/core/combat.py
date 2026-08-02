@@ -27,8 +27,8 @@ def coordinate_sender(sock):
     while not state.stop_event.is_set():
         if state.paused or state.in_scripted_sequence or state.player_hp == 0:
             if state.player_hp == 0 and not state.paused and not getattr(state, "is_reviving", False):
-                # Don't trigger global revive if auto nemesis is handling it
-                if not getattr(state, "auto_nemesis_running", False):
+                # Don't trigger global revive if auto nemesis is handling it or we are in island lobby
+                if not getattr(state, "auto_nemesis_running", False) and not state.is_island_mode:
                     threading.Thread(target=do_auto_revive, args=(sock,), daemon=True).start()
             time.sleep(0.5)
             continue
@@ -45,6 +45,10 @@ def coordinate_sender(sock):
                     print("[-] Keep-Alive timeout (0002ffff). Server unresponsive in standby. Continuing anyway...")
                     # We DO NOT close the socket or exit here anymore. Map transitions or heavy combat can delay the server.
             else:
+                if state.is_island_mode and not state.in_island_map:
+                    # In Island mode lobby, don't send coords yet
+                    continue
+                    
                 # Regular coordinate send
                 x_hex = format(int(state.player_x * 256) & 0xFFFF, '04x')
                 y_hex = format(int(state.player_y * 256) & 0xFFFF, '04x')

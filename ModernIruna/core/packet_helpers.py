@@ -97,9 +97,9 @@ def hex_recv(sock, expect_len=4096, label=None) -> bytes:
         raise ConnectionError("Server closed connection")
     h = binascii.hexlify(data).decode()
     if label:
-        msg = f"← {label} ({len(data)} bytes): {h}"
+        msg = f"<- {label} ({len(data)} bytes): {h}"
     else:
-        msg = f"← Received ({len(data)} bytes): {h}"
+        msg = f"<- Received ({len(data)} bytes): {h}"
         
     import sys
     if "--minimal" not in sys.argv:
@@ -113,9 +113,9 @@ def hex_send(sock, hexstr: str, label=None):
     raw = binascii.unhexlify(hexstr)
     sock.sendall(raw)
     if label:
-        msg = f"→ {label}: {hexstr}"
+        msg = f"-> {label}: {hexstr}"
     else:
-        msg = f"→ Sent: {hexstr}"
+        msg = f"-> Sent: {hexstr}"
         
     import sys
     if "--minimal" not in sys.argv:

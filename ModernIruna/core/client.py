@@ -74,6 +74,48 @@ class IrunaClient:
 
         return True
 
+    def disconnect(self):
+        """Safely stops threads and closes the socket."""
+        print("[!] Disconnecting client and stopping threads...")
+        state.stop_event.set()
+        if self.sock:
+            try:
+                self.sock.close()
+            except Exception:
+                pass
+            self.sock = None
+        self.is_connected = False
+        
+        # Reset stop event for next connection
+        import time
+        time.sleep(1.0) # Wait for threads to die
+        state.stop_event.clear()
+
+    def connect_to_island_and_start(self, mageurl, email):
+        """
+        Connect to Island (port 30009).
+        """
+        try:
+            from core.login import connect_to_island
+            self.sock, self.char_id_hex = connect_to_island(mageurl, email)
+        except Exception as e:
+            print(f"[-] Island Login failed: {e}")
+            self.is_connected = False
+            return False
+
+        # Phase 2: Start background threads
+        # Island mode may have a different set of threads, but we still need the receiver and coordinate sender
+        print("\n[+] Island session established. Starting threads...")
+        self.is_connected = True
+        state.char_id_hex = self.char_id_hex
+        state.is_island_mode = True
+        state.in_island_map = False
+
+        threading.Thread(target=coordinate_sender, args=(self.sock,), daemon=True).start()
+        threading.Thread(target=continuous_receiver, args=(self.sock,), daemon=True).start()
+        
+        return True
+
 
 # Singleton — imported by server.py as `from core.client import client`
 client = IrunaClient()

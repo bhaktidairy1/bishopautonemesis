@@ -12,7 +12,7 @@ from core.game_state import state
 from core.packets import (
     OP_MAP_SYNC, OP_MAP_SYNC_B505, OP_MOB_SPAWN, OP_ENTITY_DEATH, OP_HIT_CONFIRM,
     OP_INVENTORY, OP_ITEM_DROP, OP_INV_UPDATE, OP_MAP_READY, OP_MAP_DATA, OP_BOSS_SPAWN,
-    OP_PET_ITEM_DROP, OP_MAP_ENTITIES
+    OP_PET_ITEM_DROP, OP_MAP_ENTITIES, OP_ISLAND_LIST, OP_ISLAND_STALL
 )
 from core.map_teleport import get_map_name
 from core.packet_helpers import write_log
@@ -40,7 +40,7 @@ def _handle_map_sync_internal(payload: bytes, success: bool):
     try:
         previous_map = getattr(state, 'current_map_hex', None)
         
-        raw_map = binascii.hexlify(payload[1:5]).decode()
+        raw_map = binascii.hexlify(payload[3:5]).decode()  # 2 bytes = 4 hex chars (e.g. "3e1c")
         raw_x = int.from_bytes(payload[5:9], "big")
         raw_y = int.from_bytes(payload[9:13], "big")
         
@@ -72,7 +72,7 @@ def _handle_map_sync_internal(payload: bytes, success: bool):
         print(f"\n[!] MAP SYNC ({status}): Map {raw_map} | Coords {shifted_x}{shifted_y}")
         
         # Auto-rejoin PT Area if we were kicked from it (000aae60 -> anything else via rejection)
-        if not success and previous_map == "000aae60" and raw_map != "000aae60":
+        if not success and previous_map == "ae60" and raw_map != "ae60":
             print("[!] PT Area Instance Expired! Spawning background thread to auto-rejoin...")
             from core.pt_area import auto_rejoin_pt_area_thread
             from core.client import client
@@ -295,6 +295,10 @@ def handle_0111_revive_warp(payload: bytes):
     Payload: [MapID(4)][X(2)][Y(2)]
     The client must echo this back as 0110 (WARP_REQ) to initiate the map change.
     """
+    if state.is_island_mode:
+        print("[*] Ignored 0111 revive packet in Island mode.")
+        return
+
     from core.packet_helpers import hex_send
     from core.client import client
     
@@ -480,6 +484,39 @@ def handle_party_disband(payload: bytes):
     state.party_update_event.set()
 
 
+def handle_island_stall(payload: bytes):
+    """
+    Parses the 2410 shop response and prints the items.
+    """
+    try:
+        from core.island import parse_stall_data
+        # We need to pass the raw hex with length because parse_stall_data expects the full dump format currently
+        # Wait, the payload is just the bytes after the length+opcode.
+        # Let's adjust island.py to parse directly from the payload instead.
+        import binascii
+        items = parse_stall_data(binascii.hexlify(payload).decode())
+        if items:
+            state.stall_items = items
+            print(f"[*] Fetched Stall! Found {len(items)} items.")
+            for it in items:
+                print(f"    - [{it['item_id']}] {it['name']} : {it['price']} Spina")
+    except Exception as e:
+        print(f"[-] Error in handle_island_stall: {e}")
+
+def handle_island_list(payload: bytes):
+    """
+    Parses the a008 island list response and stores it in state.
+    """
+    try:
+        from core.island import parse_island_data
+        import binascii
+        items = parse_island_data(binascii.hexlify(payload).decode())
+        if items:
+            state.island_list = items
+            print(f"[*] Fetched Island List! Found {len(items)} islands.")
+    except Exception as e:
+        print(f"[-] Error in handle_island_list: {e}")
+
 # ════════════════════════════════════════════
 #  HANDLER REGISTRY
 # ════════════════════════════════════════════
@@ -511,6 +548,8 @@ HANDLERS = {
     OP_PET_ITEM_DROP:   handle_pet_item_drop,
     OP_MAP_READY:       handle_map_ready,
     OP_MAP_DATA:        handle_map_data,
+    OP_ISLAND_STALL:    handle_island_stall,
+    OP_ISLAND_LIST:     handle_island_list,
 }
 
 
@@ -560,7 +599,7 @@ def continuous_receiver(sock: socket.socket):
                 
                 # Log every packet (console + file)
                 opcode_hex = hex(opcode)
-                log_line = f"← [RECV] {opcode_hex} | {binascii.hexlify(raw_packet).decode()}"
+                log_line = f"<- [RECV] {opcode_hex} | {binascii.hexlify(raw_packet).decode()}"
                 print(log_line)
                 write_log(log_line)
                 

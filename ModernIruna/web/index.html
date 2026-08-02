@@ -28,7 +28,16 @@
                     value="https://gae4php82-real.an.r.appspot.com/_ah/login?continue=https://gae4php82-real.an.r.appspot.com/authcreate&auth=g.a000_AgHxtZwYUg6UzxIoLktRY9_0NIwsEP6RIrKMlJPrvFr7Yz4WpxEYi9ex-vcdsUEikqZzAACgYKAQsSARYSFQHGX2MicDCklNW1k0JgRkX3M-OD0xoVAUF8yKq5o_EDjiK3yaOGce1R1iy20076">
             </div>
 
-            <button id="connect-btn" class="sys-btn primary">INITIALIZE CONNECTION</button>
+            <div class="input-group" style="margin-top: 10px; margin-bottom: 20px;">
+                <label>Google Account Email (Required for Island Mode)</label>
+                <input type="email" id="email-input" placeholder="e.g. kitzgaming24@gmail.com" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 6px; color: #fff;">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button id="connect-btn" class="sys-btn primary" style="flex: 1;">INITIALIZE CONNECTION</button>
+                <button id="connect-island-btn" class="sys-btn" style="flex: 1; background: rgba(50,200,255,0.2); border-color: #32c8ff; color: #32c8ff;">CONNECT ISLAND</button>
+            </div>
+
             <div id="login-status" class="status-msg"></div>
             <div id="login-terminal" class="terminal-box" style="height: 150px; margin-top: 15px; font-size: 0.85em;"></div>
             <div id="app-version" style="font-size: 0.8em; color: #888; text-align: center; margin-top: 10px;">Loading version...</div>
@@ -209,7 +218,71 @@
         </main>
 
     </div>
-    <script src="app.js"></script>
+    
+    <!-- Island Dashboard Screen -->
+    <div id="island-dashboard-screen" class="screen hidden" style="padding: 30px; width: 100%; max-width: 1400px; margin: 0 auto;">
+        <header class="dash-head">
+            <div>
+                <h2>Island Dashboard</h2>
+                <div class="conn-status" style="margin-top: 5px;">
+                    <div id="island-status-dot" class="pulse"></div>
+                    <span id="island-status-text">CONNECTED (ISLAND)</span>
+                </div>
+            </div>
+            <button id="disconnect-island-btn" class="sys-btn" style="width: auto; padding: 10px 20px; background: rgba(255,50,50,0.1); border: 1px solid var(--warn); color: var(--warn);">DISCONNECT</button>
+        </header>
+        
+        <main>
+            <div class="grid-layout" style="grid-template-columns: 1fr 1fr; grid-template-rows: auto 400px;">
+                <!-- Top Row: Navigation & Stall Options -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <section class="panel" style="display: flex; flex-direction: column; justify-content: center;">
+                        <h3>Island Navigation</h3>
+                        <div style="display: flex; gap: 15px; margin-top: 10px;">
+                            <button id="fetch-islands-btn" class="sys-btn primary" style="flex: 1;">Fetch Island List</button>
+                            <input type="text" id="target-island-id" placeholder="Island ID (e.g. 49d3f500)" style="flex: 2; padding: 10px 15px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Fira Code', monospace; outline: none; transition: 0.3s;" onfocus="this.style.borderColor='var(--accent)';" onblur="this.style.borderColor='var(--border)';">
+                            <button id="enter-island-btn" class="sys-btn primary" style="flex: 1;">Enter Island</button>
+                        </div>
+                    </section>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <section class="panel" style="display: flex; flex-direction: column; justify-content: center; height: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3>Stall Browser</h3>
+                            <label style="color: var(--text); font-size: 0.9em; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="sort-newest-checkbox" style="accent-color: var(--accent); width: 16px; height: 16px;"> Sort by Newest
+                            </label>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <input type="text" id="target-stall-uid" placeholder="Stall UID" style="flex: 1; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Fira Code', monospace; outline: none; transition: 0.3s;" onfocus="this.style.borderColor='var(--accent)';" onblur="this.style.borderColor='var(--border)';">
+                            <input type="text" id="target-stall-char" placeholder="Owner Char ID" style="flex: 1; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Fira Code', monospace; outline: none; transition: 0.3s;" onfocus="this.style.borderColor='var(--accent)';" onblur="this.style.borderColor='var(--border)';">
+                            <button id="browse-stall-btn" class="sys-btn primary" style="flex: 1;">Browse</button>
+                        </div>
+                    </section>
+                </div>
+                
+                <!-- Bottom Row: Stall List & Terminal -->
+                <section class="panel" style="grid-column: 1 / 2; display: flex; flex-direction: column;">
+                    <h3>Island List</h3>
+                    <div id="island-list-view" class="list-view" style="flex: 1; max-height: 150px;">
+                        <div class="inv-empty">Fetch list to view...</div>
+                    </div>
+                    <h3 style="margin-top: 15px;">Stall Items</h3>
+                    <div id="island-stall-list" class="list-view" style="flex: 1;">
+                        <div class="inv-empty">Enter an island and select a stall...</div>
+                    </div>
+                </section>
+                
+                <section class="panel terminal-panel" style="grid-column: 2 / 3; display: flex; flex-direction: column; grid-row: 2 / 3;">
+                    <h3>Island Data Stream</h3>
+                    <div id="island-terminal" class="code-font" style="flex: 1; background: rgba(0,0,0,0.5); border-radius: 8px; padding: 15px; overflow-y: auto; overflow-x: hidden; font-size: 0.85rem; line-height: 1.5; color: #a5b4c1; border: 1px solid var(--border); white-space: pre-wrap; word-break: break-all;"></div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js?v=3"></script>
 </body>
 
 </html>

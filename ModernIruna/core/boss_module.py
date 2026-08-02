@@ -130,6 +130,10 @@ def zimov_battle_thread(sock):
             hex_send(sock, battle_end_pkt)
             time.sleep(0.1)
             
+        if state.is_reviving or state.current_map_hex != "3e76":
+            print("[!] Player died or map changed during sequence. Aborting Zimov battle thread.")
+            return
+            
         # Step 5: 3e76 -> 3e58 (Exit coords roughly 4300 5000)
         # Note: Genuine client skips the 3002 Exit packet when leaving instances!
         do_warp_sync(sock, "3e76", "3e58", "4300", "5000", send_exit=False, wait_3003=False)
@@ -352,6 +356,10 @@ def auto_zimov_loop(sock):
                 
                 # Small pause to ensure map fully registers before next iteration
                 time.sleep(1.5)
+                
+                if state.current_map_hex != "3e1c" or getattr(state, "is_reviving", False):
+                    print("[!] Player is not in Dierolt (likely died). Breaking Zimov kill loop.")
+                    break
             
             if not state.auto_zimov_running:
                 break
@@ -493,7 +501,7 @@ def auto_nemesis_loop(sock):
             if state.current_map_hex and int(state.current_map_hex, 16) != start_map_id:
                 if start_map_id == 700000:
                     print("[*] PT Area expired! Waiting for background thread to re-create it...")
-                    while state.current_map_hex != "000aae60" and state.auto_nemesis_running:
+                    while state.current_map_hex != "ae60" and state.auto_nemesis_running:
                         time.sleep(1.0)
                     if not state.auto_nemesis_running:
                         break

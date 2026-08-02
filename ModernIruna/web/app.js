@@ -34,6 +34,96 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }).catch(() => {});
 
+    // --- Island Actions ---
+    const fetchIslandsBtn = document.getElementById("fetch-islands-btn");
+    const enterIslandBtn = document.getElementById("enter-island-btn");
+    const browseStallBtn = document.getElementById("browse-stall-btn");
+    
+    if (fetchIslandsBtn) {
+        fetchIslandsBtn.addEventListener("click", () => {
+            fetch("/api/island/action", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({action: "list"})
+            });
+        });
+    }
+    
+    if (enterIslandBtn) {
+        enterIslandBtn.addEventListener("click", () => {
+            const islandId = document.getElementById("target-island-id").value.trim();
+            if (islandId) {
+                fetch("/api/island/action", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({action: "enter", island_id: islandId})
+                });
+            }
+        });
+    }
+    
+    if (browseStallBtn) {
+        browseStallBtn.addEventListener("click", () => {
+            const stallUid = document.getElementById("target-stall-uid").value.trim();
+            const charId = document.getElementById("target-stall-char").value.trim();
+            if (stallUid && charId) {
+                fetch("/api/island/action", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        action: "browse_stall",
+                        char_id: charId,
+                        stall_uid: stallUid
+                    })
+                });
+            }
+        });
+    }
+    
+    const disconnectIslandBtn = document.getElementById("disconnect-island-btn");
+    if(disconnectIslandBtn) {
+        disconnectIslandBtn.addEventListener("click", () => {
+            fetch("/api/disconnect", { method: "POST" })
+            .then(() => {
+                clearInterval(pollInterval);
+                isConnected = false;
+                const islandScreen = document.getElementById("island-dashboard-screen");
+                if (islandScreen) {
+                    islandScreen.classList.remove("active");
+                    islandScreen.classList.add("hidden");
+                }
+                loginScreen.classList.remove("hidden");
+                loginScreen.classList.add("active");
+                statusMsg.textContent = "Disconnected successfully.";
+                connectBtn.disabled = false;
+                const islandBtn = document.getElementById("connect-island-btn");
+                if(islandBtn) islandBtn.disabled = false;
+            })
+            .catch(err => console.error(err));
+        });
+    }
+
+    // Disconnect Button
+    const disconnectBtn = document.getElementById("disconnect-btn");
+    if(disconnectBtn) {
+        disconnectBtn.addEventListener("click", () => {
+            fetch("/api/disconnect", { method: "POST" })
+            .then(() => {
+                clearInterval(pollInterval);
+                isConnected = false;
+                dashScreen.classList.remove("active");
+                dashScreen.classList.add("hidden");
+                loginScreen.classList.remove("hidden");
+                loginScreen.classList.add("active");
+                statusMsg.textContent = "Disconnected successfully.";
+                connectBtn.disabled = false;
+                const islandBtn = document.getElementById("connect-island-btn");
+                if(islandBtn) islandBtn.disabled = false;
+            })
+            .catch(err => console.error(err));
+        });
+    }
+
     // --- Login ---
     connectBtn.addEventListener("click", () => {
         const url = urlInput.value.trim();
@@ -58,7 +148,50 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    function transitionToDashboard() {
+    const connectIslandBtn = document.getElementById("connect-island-btn");
+    const emailInput = document.getElementById("email-input");
+    if(connectIslandBtn) {
+        connectIslandBtn.addEventListener("click", () => {
+            const url = urlInput.value.trim();
+            const email = emailInput ? emailInput.value.trim() : "";
+            if(!url || !email) {
+                statusMsg.textContent = "Error: MageURL and Email are required for Island Mode.";
+                return;
+            }
+            
+            connectIslandBtn.disabled = true;
+            statusMsg.textContent = "Initializing Island Neural Link...";
+
+            fetch("/api/island/connect", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({url, email})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    pollInterval = setInterval(fetchState, 500); 
+                    isConnected = true;
+                    loginScreen.classList.remove("active");
+                    loginScreen.classList.add("hidden");
+                    const islandScreen = document.getElementById("island-dashboard-screen");
+                    if(islandScreen) {
+                        islandScreen.classList.remove("hidden");
+                        islandScreen.classList.add("active");
+                    }
+                } else {
+                    statusMsg.textContent = "Island Login Failed: " + (data.error || "Unknown Error");
+                    connectIslandBtn.disabled = false;
+                }
+            })
+            .catch(err => {
+                statusMsg.textContent = "Fatal: Server unverified.";
+                connectIslandBtn.disabled = false;
+            });
+        });
+    }
+
+    function transitionToDashboard(isIsland = false) {
         if(isConnected) return;
         isConnected = true;
         loginScreen.classList.remove("active");
@@ -66,8 +199,16 @@ document.addEventListener("DOMContentLoaded", () => {
         
         // Wait for class transitions
         setTimeout(() => {
-            dashScreen.classList.remove("hidden");
-            dashScreen.classList.add("active");
+            if(isIsland) {
+                const islandScreen = document.getElementById("island-dashboard-screen");
+                if(islandScreen) {
+                    islandScreen.classList.remove("hidden");
+                    islandScreen.classList.add("active");
+                }
+            } else {
+                dashScreen.classList.remove("hidden");
+                dashScreen.classList.add("active");
+            }
             
             // Fetch initial log history so the terminal isn't blank on refresh
             fetch("/api/logs/history")
@@ -78,8 +219,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     data.logs.forEach(log => {
                         let span = document.createElement("span");
                         span.textContent = log;
-                        if(log.includes("←")) span.className = "log-recv";
-                        else if (log.includes("→")) span.className = "log-send";
+                        if(log.includes("<-")) span.className = "log-recv";
+                        else if (log.includes("->")) span.className = "log-send";
                         else if (log.includes("[!]")) span.className = "log-warn";
                         terminal.appendChild(span);
                     });
@@ -95,18 +236,63 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(r => r.json())
         .then(data => {
             if(data.connected && !isConnected) {
-                transitionToDashboard();
+                transitionToDashboard(data.is_island_mode);
             }
 
             if(isConnected) {
                 updateControls(data);
                 updateParty(data);
                 updateInventory(data);
+                if (data.is_island_mode) {
+                    updateIslandUI(data);
+                }
                 if (data.currentMap) {
                     mapNameSpan.textContent = data.currentMap;
                 }
             }
         });
+    }
+
+    function updateIslandUI(data) {
+        const stallList = document.getElementById("island-stall-list");
+        if (stallList) {
+            if (!data.stall_items || data.stall_items.length === 0) {
+                stallList.innerHTML = '<div class="inv-empty">No items loaded...</div>';
+            } else {
+                stallList.innerHTML = '';
+                data.stall_items.forEach(it => {
+                    const row = document.createElement("div");
+                    row.className = "inv-row";
+                    row.innerHTML = `
+                        <div class="inv-info">
+                            <span class="inv-name">${it.name}</span>
+                            <span class="inv-id">Price: ${it.price.toLocaleString()}</span>
+                        </div>
+                    `;
+                    stallList.appendChild(row);
+                });
+            }
+        }
+        
+        const islandList = document.getElementById("island-list-view");
+        if (islandList) {
+            if (!data.island_list || data.island_list.length === 0) {
+                islandList.innerHTML = '<div class="inv-empty">No islands loaded...</div>';
+            } else {
+                islandList.innerHTML = '';
+                data.island_list.forEach(isl => {
+                    const row = document.createElement("div");
+                    row.className = "inv-row";
+                    row.innerHTML = `
+                        <div class="inv-info">
+                            <span class="inv-name">${isl.name}</span>
+                            <span class="inv-id">ID: ${isl.char_id}</span>
+                        </div>
+                    `;
+                    islandList.appendChild(row);
+                });
+            }
+        }
     }
 
     function fetchLogs() {
@@ -115,15 +301,17 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(data => {
             if(data.logs && data.logs.length > 0) {
                 const loginTerminal = document.getElementById("login-terminal");
+                const islandTerminal = document.getElementById("island-terminal");
                 
                 let isScrolledToBottom = terminal ? (terminal.scrollHeight - terminal.clientHeight <= terminal.scrollTop + 1) : false;
                 let isLoginScrolled = loginTerminal ? (loginTerminal.scrollHeight - loginTerminal.clientHeight <= loginTerminal.scrollTop + 1) : false;
+                let isIslandScrolled = islandTerminal ? (islandTerminal.scrollHeight - islandTerminal.clientHeight <= islandTerminal.scrollTop + 1) : false;
                 
                 data.logs.forEach(log => {
                     let span = document.createElement("span");
                     span.textContent = log;
-                    if(log.includes("←")) span.className = "log-recv";
-                    else if (log.includes("→")) span.className = "log-send";
+                    if(log.includes("<-")) span.className = "log-recv";
+                    else if (log.includes("->")) span.className = "log-send";
                     else if (log.includes("[!]")) span.className = "log-warn";
                     
                     if (terminal) terminal.appendChild(span);
@@ -131,6 +319,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (loginTerminal) {
                         let spanClone = span.cloneNode(true);
                         loginTerminal.appendChild(spanClone);
+                    }
+                    if (islandTerminal) {
+                        let spanClone = span.cloneNode(true);
+                        islandTerminal.appendChild(spanClone);
                     }
                 });
 
@@ -150,6 +342,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                     if (isLoginScrolled) {
                         loginTerminal.scrollTop = loginTerminal.scrollHeight;
+                    }
+                }
+                
+                if (islandTerminal) {
+                    while(islandTerminal.childNodes.length > 500) {
+                        islandTerminal.removeChild(islandTerminal.firstChild);
+                    }
+                    if (isIslandScrolled) {
+                        islandTerminal.scrollTop = islandTerminal.scrollHeight;
                     }
                 }
             }
@@ -177,18 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
         sendAction({type: "toggle_pause"});
     });
 
-    const disconnectBtn = document.getElementById("disconnect-btn");
-    if (disconnectBtn) {
-        disconnectBtn.addEventListener("click", () => {
-            if (confirm("Are you sure you want to gracefully close the connection?")) {
-                fetch("/api/disconnect", { method: "POST" })
-                    .then(() => {
-                        window.location.reload();
-                    })
-                    .catch(e => console.error(e));
-            }
-        });
-    }
+
 
     injectBtn.addEventListener("click", () => {
         const hex = hexInput.value;
@@ -777,4 +967,5 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     })
     .catch(err => console.log("No active session found."));
+    
 });

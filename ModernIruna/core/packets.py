@@ -57,7 +57,46 @@ PRESENCE_ZEROS = "00" * 25
 
 
 # ════════════════════════════════════════════
+#  ISLAND OPCODES
+# ════════════════════════════════════════════
+OP_ISLAND_LIST   = 0xa008
+OP_ISLAND_ENTER  = 0xa000
+OP_ISLAND_STALL  = 0x2410
+
+# ════════════════════════════════════════════
 #  PACKET BUILDERS
+# ════════════════════════════════════════════
+
+def build_island_login_packet(token_hex: str, email: str) -> bytes:
+    """Builds the FF02 login packet for the Island server (port 30009)."""
+    email_hex = email.encode('ascii').hex()
+    email_len = f"{len(email_hex)//2:04x}"
+    payload = f"ff020020{token_hex}{email_len}{email_hex}"
+    
+    # Total packet length includes the 4-byte header!
+    # If payload is N bytes, header says N+4 bytes. (Unlike normal login which uses 2-byte header?)
+    # Wait, the user's dump showed C->S: 003c ff02...
+    # 003c is 60 bytes total length.
+    # ff02 (2) + 0020 (2) + token (32) + email_len (2) + email (?)
+    # Let's count the user's hex dump:
+    # 003c (60)
+    # ff020020 (4)
+    # 3939623164633266323165376338623963346236353439626466383035666631 (32)
+    # 0016 (2) -> length of email string
+    # 6b69747a67616d696e67323440676d61696c2e636f6d (22)
+    # Total = 4 + 32 + 2 + 22 = 60. So length header is 003c.
+    # Therefore, the length header is just 2 bytes, denoting the size of the *entire packet* (including the 2 byte header).
+    # Wait, 2 + 60 = 62?
+    # No, the length header itself is 2 bytes (003c = 60).
+    # And the payload bytes are: 4 + 32 + 2 + 22 = 60 bytes.
+    # Wait, the length header specifies the length of the *entire packet* including the 2 bytes of the header?
+    # No, let's look at the old login packet builder:
+    # return len(payload).to_bytes(2, "big") + payload -> this means the 2 bytes specify the length of the payload only!
+    # Wait, if payload is 60 bytes, len(payload) is 60. Then 003c is 60.
+    # Ah! The user's dump had 003eff02 in the broken log, because I calculated the length manually as `len(payload)//2 + 2`
+    
+    raw_payload = bytes.fromhex(payload)
+    return len(raw_payload).to_bytes(2, "big") + raw_payload
 # ════════════════════════════════════════════
 
 def build_login_packet(token_hex: str) -> bytes:

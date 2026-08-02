@@ -83,6 +83,56 @@ def index():
 def static_files(path):
     return send_from_directory("web", path)
 
+@app.route("/api/disconnect", methods=["POST"])
+def disconnect_iruna():
+    client.disconnect()
+    return jsonify({"status": "Disconnected successfully"})
+
+@app.route("/api/island/connect", methods=["POST"])
+def connect_island():
+    data = request.json
+    url = data.get("url")
+    email = data.get("email")
+    if not url or not email: return jsonify({"error": "URL and Email required for Island"}), 400
+
+    def background_island_connect():
+        import time
+        client.disconnect() # Ensure old connection is closed
+        if client.connect_to_island_and_start(url, email):
+            print("[*] Island connection established.")
+
+    threading.Thread(target=background_island_connect, daemon=True).start()
+    return jsonify({"success": True})
+
+@app.route("/api/island/action", methods=["POST"])
+def island_action():
+    if not client.is_connected:
+        return jsonify({"error": "Not connected"}), 400
+        
+    data = request.json
+    action = data.get("action")
+    
+    from core.island import get_island_list, enter_island, browse_stall
+    
+    if action == "list":
+        get_island_list(client.sock)
+        return jsonify({"status": "Requested Island List"})
+        
+    elif action == "enter":
+        island_id = data.get("island_id")
+        if island_id:
+            enter_island(client.sock, island_id)
+            return jsonify({"status": f"Entering island {island_id}"})
+            
+    elif action == "browse_stall":
+        char_id = data.get("char_id")
+        stall_uid = data.get("stall_uid")
+        if char_id and stall_uid:
+            browse_stall(client.sock, char_id, stall_uid)
+            return jsonify({"status": f"Browsing stall {stall_uid} of {char_id}"})
+            
+    return jsonify({"error": "Unknown action or missing parameters"}), 400
+
 @app.route("/api/connect", methods=["POST"])
 def connect_iruna():
     data = request.json
@@ -136,8 +186,42 @@ def get_state():
         "player_max_hp": getattr(state, "player_max_hp", 0),
         "player_max_mp": getattr(state, "player_max_mp", 0),
         "party": state.party_members,
-        "pendingInvite": state.pending_party_invite
+        "pendingInvite": state.pending_party_invite,
+        "stall_items": getattr(state, "stall_items", []),
+        "island_list": getattr(state, "island_list", []),
+        "is_island_mode": state.is_island_mode
     })
+
+@app.route("/api/island/list", methods=["POST"])
+def api_island_list():
+    if not client or not client.sock:
+        return jsonify({"error": "Not connected"}), 400
+    from core.island import get_island_list
+    get_island_list(client.sock)
+    return jsonify({"success": True})
+
+@app.route("/api/island/enter", methods=["POST"])
+def api_island_enter():
+    if not client or not client.sock:
+        return jsonify({"error": "Not connected"}), 400
+    island_id = request.json.get("island_id")
+    if not island_id:
+        return jsonify({"error": "Missing island_id"}), 400
+    from core.island import enter_island
+    enter_island(client.sock, island_id)
+    return jsonify({"success": True})
+
+@app.route("/api/island/stall", methods=["POST"])
+def api_island_stall():
+    if not client or not client.sock:
+        return jsonify({"error": "Not connected"}), 400
+    target_char = request.json.get("target_char")
+    stall_uid = request.json.get("stall_uid")
+    if not target_char or not stall_uid:
+        return jsonify({"error": "Missing target_char or stall_uid"}), 400
+    from core.island import browse_stall
+    browse_stall(client.sock, target_char, stall_uid)
+    return jsonify({"success": True, "message": "Stall requested"})
 
 @app.route("/api/party/invite", methods=["POST"])
 def api_party_invite():

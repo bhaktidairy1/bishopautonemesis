@@ -143,6 +143,10 @@ def teleport(sock, map_id: int, x: int = None, y: int = None):
     y_shifted = _make_shifted_coord(y)
     heartbeat_coords = _make_heartbeat_coords(x, y)
 
+    if getattr(state, "current_map_hex", None) == map_hex:
+        print(f"[*] Already in map {map_hex}. Skipping 0110 teleport.")
+        return {"status": "success", "map_id": map_id, "x": x, "y": y}
+
     # Pause navigation heartbeat so it doesn't interrupt the transition sequence
     was_paused = state.paused
     state.paused = True
