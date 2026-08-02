@@ -79,50 +79,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-    
-    const disconnectIslandBtn = document.getElementById("disconnect-island-btn");
-    if(disconnectIslandBtn) {
-        disconnectIslandBtn.addEventListener("click", () => {
-            fetch("/api/disconnect", { method: "POST" })
-            .then(() => {
-                clearInterval(pollInterval);
-                isConnected = false;
-                const islandScreen = document.getElementById("island-dashboard-screen");
-                if (islandScreen) {
-                    islandScreen.classList.remove("active");
-                    islandScreen.classList.add("hidden");
-                }
-                loginScreen.classList.remove("hidden");
-                loginScreen.classList.add("active");
-                statusMsg.textContent = "Disconnected successfully.";
-                connectBtn.disabled = false;
-                const islandBtn = document.getElementById("connect-island-btn");
-                if(islandBtn) islandBtn.disabled = false;
-            })
-            .catch(err => console.error(err));
-        });
-    }
-
-    // Disconnect Button
-    const disconnectBtn = document.getElementById("disconnect-btn");
-    if(disconnectBtn) {
-        disconnectBtn.addEventListener("click", () => {
-            fetch("/api/disconnect", { method: "POST" })
-            .then(() => {
-                clearInterval(pollInterval);
-                isConnected = false;
-                dashScreen.classList.remove("active");
-                dashScreen.classList.add("hidden");
-                loginScreen.classList.remove("hidden");
-                loginScreen.classList.add("active");
-                statusMsg.textContent = "Disconnected successfully.";
-                connectBtn.disabled = false;
-                const islandBtn = document.getElementById("connect-island-btn");
-                if(islandBtn) islandBtn.disabled = false;
-            })
-            .catch(err => console.error(err));
-        });
-    }
 
     // --- Login ---
     connectBtn.addEventListener("click", () => {

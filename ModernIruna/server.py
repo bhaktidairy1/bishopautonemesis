@@ -92,6 +92,11 @@ def disconnect_iruna():
     client.disconnect()
     return jsonify({"status": "Disconnected successfully"})
 
+@app.route("/disconnect", methods=["GET"])
+def disconnect_route():
+    client.disconnect()
+    return "Disconnected successfully! You can close this tab or return to the main page."
+
 @app.route("/api/island/connect", methods=["POST"])
 def connect_island():
     data = request.json
