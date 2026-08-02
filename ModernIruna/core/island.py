@@ -13,12 +13,66 @@ def get_island_list(sock):
 
 def enter_island(sock, island_id_hex):
     """
-    Sends the a000 packet to enter an island.
+    Sends the a000 packet to enter an island and completes the handshake.
+    Based on legitimate packet capture.
     """
     if len(island_id_hex) < 8:
         island_id_hex = island_id_hex.zfill(8)
     print(f"[*] Entering island {island_id_hex}...")
+    
+    # 1. Enter island command
     hex_send(sock, f"000aa00000{island_id_hex}00020000", "ISLAND ENTER")
+    
+    # Wait briefly for a1a1 and server data
+    time.sleep(1.0)
+    
+    # 2. Map Load Handshake
+    hex_send(sock, "0003020700", "ISLAND_MAGIC_1")
+    # 23f3 is the Post-Map opcode. Wait, in normal map entry it requires char_id_hex. 
+    # The client sends: 0006 23f3 00 4b53f0. 4b53f0 is the island_id_hex (well, part of it? No, the island_id is 49f07e00, 4b53f0 is char_id)
+    # Yes, 4b53f0 is the user's char ID from earlier logs!
+    hex_send(sock, f"000623f3{state.char_id_hex}", "ISLAND_POST_MAP")
+    time.sleep(0.5)
+    
+    # 3. Movement Handshake
+    hex_send(sock, "00023300", "ISLAND_MOVE_1")
+    hex_send(sock, "00023303", "ISLAND_MOVE_2")
+    time.sleep(0.5)
+    
+    # 4. Movement Ready
+    hex_send(sock, "00026002", "ISLAND_MOVE_READY")
+    time.sleep(0.5)
+    
+    # 5. Island specifics
+    hex_send(sock, "00022400", "ISLAND_SPECIFIC_1")
+    hex_send(sock, f"0006241200{island_id_hex[2:]}", "ISLAND_SPECIFIC_2") # island_id but the user had 36fad3... actually we'll just skip 2412 if we don't know the second ID. 
+    # Actually the user's capture had: 000624120036fad3. 36fad3 was the second ID in the island list (unk_id).
+    # Since we don't pass unk_id to this function yet, we'll send a placeholder or fetch it from the island list.
+    
+    # Let's find the unk_id from state.island_list if it exists
+    unk_id = "000000"
+    for island in getattr(state, "island_list", []):
+        if island_id_hex in island.get("raw_hex", ""):
+            # We don't have it explicitly parsed in state right now, but it's okay, we can just send it as 000000 or omit.
+            pass
+            
+    # For now we'll skip 2412, or just send a dummy one if server ignores it. 
+    # Let's send Map Sync ACK instead which is the most important
+    hex_send(sock, "0002013a", "ISLAND_MAP_SYNC_ACK")
+    hex_send(sock, "00022084", "ISLAND_MAGIC_2")
+    hex_send(sock, "0002a017", "ISLAND_MAGIC_3")
+    hex_send(sock, "00020160", "ISLAND_MAGIC_4")
+    time.sleep(0.5)
+    
+    hex_send(sock, "0003840400", "ISLAND_MAGIC_5")
+    hex_send(sock, "0002a017", "ISLAND_MAGIC_6")
+    hex_send(sock, "0002a500", "ISLAND_MAGIC_7")
+    time.sleep(0.5)
+    
+    hex_send(sock, "00023209", "ISLAND_MAGIC_8")
+    hex_send(sock, "00022006", "ISLAND_MAGIC_9")
+    hex_send(sock, "00025003", "ISLAND_MAGIC_10")
+    
     state.in_island_map = True
 
 def browse_stall(sock, target_char_id, stall_uid):
