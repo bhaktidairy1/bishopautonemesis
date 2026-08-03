@@ -25,6 +25,7 @@ CORS(app)
 
 import atexit
 import sys
+import signal
 
 def _global_exception_handler(exc_type, exc_value, exc_traceback):
     print(f"\n[CRITICAL] Unhandled Exception: {exc_type.__name__}: {exc_value}")
@@ -47,6 +48,20 @@ def _atexit_handler():
         pass
 
 atexit.register(_atexit_handler)
+
+def _signal_handler(signum, frame):
+    print(f"\n[!] Caught signal {signum}. Triggering graceful shutdown.")
+    try:
+        from core.packet_helpers import upload_to_discord
+        upload_to_discord()
+    except:
+        pass
+    import os
+    os._exit(0)
+
+# Catch SIGTERM (Render restart) and SIGINT (Ctrl+C)
+signal.signal(signal.SIGTERM, _signal_handler)
+signal.signal(signal.SIGINT, _signal_handler)
 
 # Buffer for sys.stdout redirection
 log_buffer = []
