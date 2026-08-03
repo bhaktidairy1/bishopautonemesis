@@ -23,6 +23,31 @@ args = parser.parse_args()
 app = Flask(__name__, static_folder="web")
 CORS(app)
 
+import atexit
+import sys
+
+def _global_exception_handler(exc_type, exc_value, exc_traceback):
+    print(f"\n[CRITICAL] Unhandled Exception: {exc_type.__name__}: {exc_value}")
+    import traceback
+    traceback.print_exception(exc_type, exc_value, exc_traceback)
+    try:
+        from core.packet_helpers import upload_to_discord
+        upload_to_discord()
+    except:
+        pass
+    sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
+sys.excepthook = _global_exception_handler
+
+def _atexit_handler():
+    try:
+        from core.packet_helpers import upload_to_discord
+        upload_to_discord()
+    except:
+        pass
+
+atexit.register(_atexit_handler)
+
 # Buffer for sys.stdout redirection
 log_buffer = []
 log_history = []

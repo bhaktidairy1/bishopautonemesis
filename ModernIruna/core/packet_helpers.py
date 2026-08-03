@@ -64,8 +64,11 @@ def stop_packet_log():
                 pass
             _log_file = None
 
+_discord_uploaded_filepath = None
+
 def upload_to_discord():
     """Upload the current packet log to Discord."""
+    global _discord_uploaded_filepath
     import sys, os
     if "--minimal" not in sys.argv:
         return
@@ -74,6 +77,9 @@ def upload_to_discord():
     filepath = get_current_log_filepath()
     if not filepath or not os.path.exists(filepath):
         return
+    if _discord_uploaded_filepath == filepath:
+        return
+    _discord_uploaded_filepath = filepath
         
     print(f"[*] Uploading log to Discord: {os.path.basename(filepath)}...")
     try:
