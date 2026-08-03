@@ -42,6 +42,13 @@ class WebLogRedirector:
         while '\n' in self.current_line:
             line, self.current_line = self.current_line.split('\n', 1)
             
+            try:
+                from core.packet_helpers import write_log
+                if not line.startswith("<- [RECV]") and not line.startswith("C->S"):
+                    write_log(line)
+            except:
+                pass
+            
             # Temporary buffer for web polling
             if len(log_buffer) > 500:
                 log_buffer.pop(0)
