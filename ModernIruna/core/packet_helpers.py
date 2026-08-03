@@ -15,7 +15,7 @@ import threading
 _log_file = None
 _log_filepath = None
 _log_lines = 0
-_log_lock = threading.Lock()
+_log_lock = threading.RLock()
 
 
 def get_current_log_filepath():
