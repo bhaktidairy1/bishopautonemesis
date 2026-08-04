@@ -109,7 +109,7 @@ def zimov_battle_thread(sock):
         
         # Step 3: Wait for Boss Spawn (receiver.py catches 0248/0245)
         print("\n[*] Waiting for Zimov to spawn...")
-        state.boss_spawn_event.clear()
+        # Note: Do NOT clear boss_spawn_event here, it was cleared before the warp.
         if not state.boss_spawn_event.wait(timeout=10):
             log_and_exit("Boss spawn timeout! (Waited 10s for 0248/0245)")
         else:
