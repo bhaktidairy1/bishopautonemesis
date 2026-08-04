@@ -653,6 +653,17 @@ def perform_action():
 
     return jsonify({"error": "Unknown action"}), 400
 
+@app.route("/test_discord", methods=["GET", "POST"])
+def test_discord():
+    """Manually test the Discord webhook."""
+    try:
+        from core.packet_helpers import upload_to_discord
+        print("[*] Running manual Discord webhook test...")
+        upload_to_discord(force=True)
+        return jsonify({"status": "Webhook triggered. Check Discord!"})
+    except Exception as e:
+        return jsonify({"status": "Error", "message": str(e)}), 500
+
 def cleanup_and_exit():
     print("[!] Cleaning up resources...")
     state.auto_zimov_running = False

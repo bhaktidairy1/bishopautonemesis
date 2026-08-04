@@ -66,18 +66,19 @@ def stop_packet_log():
 
 _discord_uploaded_filepath = None
 
-def upload_to_discord():
+def upload_to_discord(force=False):
     """Upload the current packet log to Discord."""
     global _discord_uploaded_filepath
     import sys, os
-    if "--minimal" not in sys.argv:
+    if "--minimal" not in sys.argv and not force:
         return
         
     webhook_url = "https://discord.com/api/webhooks/1520498468655730788/z6GwrwKJbCWSFPoDn2V1hlskBygnrX-E6Ijw1szMmckieJiriKqNb6R8nV0fJ5TWv4po"
     filepath = get_current_log_filepath()
     if not filepath or not os.path.exists(filepath):
+        print("[-] Discord upload failed: No active log file found.")
         return
-    if _discord_uploaded_filepath == filepath:
+    if _discord_uploaded_filepath == filepath and not force:
         return
     _discord_uploaded_filepath = filepath
         
@@ -87,7 +88,8 @@ def upload_to_discord():
         with open(filepath, "rb") as f:
             response = requests.post(
                 webhook_url,
-                files={"file": (os.path.basename(filepath), f)}
+                files={"file": (os.path.basename(filepath), f)},
+                timeout=5
             )
         if response.status_code in (200, 204):
             print("[+] Successfully uploaded packet log to Discord.")
