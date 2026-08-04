@@ -155,6 +155,16 @@ def enter_world(sock, char_id_hex: str):
 
     # Look for 0111 to override default spawn before we send 0110!
     _extract_0111_spawn(login_buffer)
+    
+    # [!] CRITICAL FIX for broken cutscene state:
+    # If the user disconnected during a boss fight (e.g., Zimov in 3e76), the server queues a cutscene upon login.
+    # If we warp into 3e76 directly, the server hangs waiting for a cutscene-skip packet we don't know how to send.
+    # To fix this, the real client intercepts boss-room spawns and forces a warp to the entrance instead.
+    # We will force a warp to Dierolt (3e1c) instead to instantly clear the broken state.
+    if state.current_map_hex in ["3e76", "3e58"]:
+        print(f"[!] Logged into a Boss Room ({state.current_map_hex}). Overriding spawn to Dierolt (3e1c) to clear broken state!")
+        state.current_map_hex = "3e1c"
+        state.last_map_coords = "43005200"
 
     # Step 8: Presence Start — header + 25 zero bytes
     _send_and_log(sock, PKT_PRESENCE_START, "Presence Start")
