@@ -16,10 +16,15 @@ BACKSTAB_CAST_PREFIX   = "000a01431b870102"
 BACKSTAB_DAMAGE_PREFIX = "000e01484e210102"
 
 def log_and_exit(msg):
-    import os
-    from core.packet_helpers import write_log
+    import os, sys
+    from core.packet_helpers import write_log, upload_to_discord
     print(f"\n[CRITICAL EXIT] {msg}")
     write_log(f"CRITICAL EXIT TRIGGERED: {msg}")
+    try:
+        upload_to_discord()
+    except:
+        pass
+    sys.stdout.flush()
     os._exit(1)
 BACKSTAB_CAST_PREFIX   = "000a01431b870102"
 BACKSTAB_DAMAGE_PREFIX = "000e01484e210102"
