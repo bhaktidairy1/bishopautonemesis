@@ -459,15 +459,20 @@ def cast_individual_buff(sock, buff_id):
     if not state.skill_cast_event.wait(timeout=3.0):
         print(f"[-] Timeout waiting for {name} response.")
 
-def auto_nemesis_loop(sock):
+def auto_nemesis_loop(sock, target_name=None, target_id=None):
     """
     Auto Nemesis Grinding Loop:
-    Targets nearest mob, casts Nemesis every 1 sec.
+    Targets nearest mob matching target_name (or Moss Golem by default), casts Nemesis every 1 sec.
     If MP < 1000, returns to Kakeula to heal, then returns to original map.
     """
     state.auto_nemesis_running = True
+    
+    # Save the custom target if provided
+    state.auto_nemesis_target_name = target_name
+    state.auto_nemesis_target_id = target_id
+    
     print("\n==================================================")
-    print(" [AUTO NEMESIS LOOP STARTED]")
+    print(f" [AUTO NEMESIS LOOP STARTED] Target: {target_name or 'Moss Golem'}")
     print("==================================================")
     
     try:
@@ -573,11 +578,19 @@ def auto_nemesis_loop(sock):
             mobs = list(state.monsters.items())
             
             for uid, m in mobs:
-                # Filter strictly to Moss Golems as requested (or its raw ID if DB is missing)
                 name = m.get('name', '')
                 mob_id = m.get('id', 0)
-                if "Moss Golem" not in name and not str(mob_id).startswith("2000028") and "2000028" not in name:
-                    continue
+                
+                # Check custom target if provided
+                if getattr(state, "auto_nemesis_target_name", None):
+                    target_name = state.auto_nemesis_target_name
+                    # Try exact match on name or ID
+                    if target_name not in name and (not getattr(state, "auto_nemesis_target_id", None) or str(state.auto_nemesis_target_id) not in str(mob_id)):
+                        continue
+                else:
+                    # Default strictly to Moss Golems as requested (or its raw ID if DB is missing)
+                    if "Moss Golem" not in name and not str(mob_id).startswith("2000028") and "2000028" not in name:
+                        continue
                     
                 mx = m.get('x', 0)
                 my = m.get('y', 0)

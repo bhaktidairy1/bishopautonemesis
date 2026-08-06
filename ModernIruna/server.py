@@ -631,7 +631,11 @@ def perform_action():
         if getattr(state, "auto_zimov_running", False) or getattr(state, "auto_nemesis_running", False) or state.in_scripted_sequence:
             return jsonify({"status": "error", "message": "A sequence is already running"}), 400
             
-        threading.Thread(target=auto_nemesis_loop, args=(client.sock,), daemon=True).start()
+        # Optional: Set a specific target name to farm instead of Moss Golem
+        target_name = data.get("target_name")
+        target_id = data.get("target_id")
+            
+        threading.Thread(target=auto_nemesis_loop, args=(client.sock, target_name, target_id), daemon=True).start()
         return jsonify({"status": "auto_nemesis_started"})
         
     elif action_type == "stop_auto_nemesis":
