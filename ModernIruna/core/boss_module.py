@@ -372,10 +372,18 @@ def auto_zimov_loop(sock):
                 break
                 
             bag_usage = calculate_bag_usage()
-            print(f"\n[*] Auto-Zimov: Checking Bag Space ({bag_usage}/50 slots used)")
             
-            if bag_usage >= 30:
-                print("[*] Bag nearly full! Initiating Auto-Sell...")
+            # Find Zimov Tail count (Item ID: 0x28BE)
+            tail_count = 0
+            for item in state.inventory.values():
+                if item["id"] == 0x28be:
+                    tail_count = item["count"]
+                    break
+                    
+            print(f"\n[*] Auto-Zimov: Checking Bag Space (Tails: {tail_count}, {bag_usage}/50 slots used)")
+            
+            if tail_count >= 2500:
+                print(f"[*] Reached {tail_count} Zimov Tails! Initiating Auto-Sell...")
                 kakeula_sell_thread(sock)
             else:
                 print("[*] Auto-Zimov: Healing at Kakeula...")
