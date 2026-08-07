@@ -123,11 +123,18 @@
                     </div>
                     
                     <h4 style="color: #6464ff; margin-bottom: 5px; margin-top: 15px;">Individual Buffs</h4>
-                    <div class="btn-group">
-                        <button id="buff-rev-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff;">REVELATION</button>
-                        <button id="buff-risp-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff;">RISPARMIO</button>
-                        <button id="buff-pre-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff;">PREIRE</button>
-                        <button id="buff-bless-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff;">BLESS</button>
+                    <div class="btn-group" style="display: grid; grid-template-columns: 1fr auto; gap: 5px; align-items: center;">
+                        <button id="buff-rev-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff; width: 100%;">REVELATION</button>
+                        <button class="sys-btn toggle-buff-btn" data-buff="revelation" style="width: 40px; background: rgba(0,255,100,0.2); border-color: #00ff64; color: #00ff64;" title="Toggle Enabled/Disabled">ON</button>
+                        
+                        <button id="buff-risp-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff; width: 100%;">RISPARMIO</button>
+                        <button class="sys-btn toggle-buff-btn" data-buff="risparmio" style="width: 40px; background: rgba(0,255,100,0.2); border-color: #00ff64; color: #00ff64;" title="Toggle Enabled/Disabled">ON</button>
+                        
+                        <button id="buff-pre-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff; width: 100%;">PREIRE</button>
+                        <button class="sys-btn toggle-buff-btn" data-buff="preire" style="width: 40px; background: rgba(0,255,100,0.2); border-color: #00ff64; color: #00ff64;" title="Toggle Enabled/Disabled">ON</button>
+                        
+                        <button id="buff-bless-btn" class="sys-btn primary" style="background: rgba(100,100,255,0.2); border-color: #6464ff; color: #6464ff; width: 100%;">BLESS</button>
+                        <button class="sys-btn toggle-buff-btn" data-buff="bless" style="width: 40px; background: rgba(0,255,100,0.2); border-color: #00ff64; color: #00ff64;" title="Toggle Enabled/Disabled">ON</button>
                     </div>
                     
                     <div id="zimov-status" class="tp-status-msg"></div>

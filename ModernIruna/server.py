@@ -245,7 +245,8 @@ def get_state():
         "pendingInvite": state.pending_party_invite,
         "stall_items": getattr(state, "stall_items", []),
         "island_list": getattr(state, "island_list", []),
-        "is_island_mode": state.is_island_mode
+        "is_island_mode": state.is_island_mode,
+        "disabled_buffs": list(getattr(state, "disabled_buffs", set()))
     })
 
 @app.route("/api/island/list", methods=["POST"])
@@ -654,6 +655,20 @@ def perform_action():
         if client.sock and buff_id:
             threading.Thread(target=cast_individual_buff, args=(client.sock, buff_id), daemon=True).start()
         return jsonify({"status": "individual_buff_cast"})
+        
+    elif action_type == "toggle_buff":
+        buff_id = data.get("buff_id")
+        if not buff_id:
+            return jsonify({"error": "Missing buff_id"}), 400
+            
+        if buff_id in state.disabled_buffs:
+            state.disabled_buffs.remove(buff_id)
+            enabled = True
+        else:
+            state.disabled_buffs.add(buff_id)
+            enabled = False
+            
+        return jsonify({"success": True, "buff_id": buff_id, "enabled": enabled})
 
     return jsonify({"error": "Unknown action"}), 400
 

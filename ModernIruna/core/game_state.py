@@ -45,6 +45,9 @@ class GameState:
         self.boss_spawn_event = threading.Event()
         self.boss_death_event = threading.Event()
         
+        # Disabled Skills/Buffs
+        self.disabled_buffs = set()
+        
         # Island Mode
         self.is_island_mode = False
         self.in_island_map = False

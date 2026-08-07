@@ -569,7 +569,37 @@ document.addEventListener("DOMContentLoaded", () => {
         }    
         healBtn.disabled = false;
         sellBtn.disabled = false;
+        
+        // Sync Buff Toggles
+        document.querySelectorAll(".toggle-buff-btn").forEach(btn => {
+            const buffId = btn.dataset.buff;
+            if (state.disabled_buffs && state.disabled_buffs.includes(buffId)) {
+                btn.textContent = "OFF";
+                btn.style.background = "rgba(255,50,50,0.2)";
+                btn.style.borderColor = "#ff3232";
+                btn.style.color = "#ff3232";
+            } else {
+                btn.textContent = "ON";
+                btn.style.background = "rgba(0,255,100,0.2)";
+                btn.style.borderColor = "#00ff64";
+                btn.style.color = "#00ff64";
+            }
+        });
     }
+
+    // Toggle Buff Listeners
+    document.querySelectorAll(".toggle-buff-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const buffId = btn.dataset.buff;
+            fetch("/api/action", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({type: "toggle_buff", buff_id: buffId})
+            }).then(r => r.json()).then(data => {
+                if (data.error) console.error(data.error);
+            });
+        });
+    });
 
     let radarCanvas = document.getElementById("radar-canvas");
     let radarCtx = radarCanvas.getContext("2d");
