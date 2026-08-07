@@ -147,7 +147,7 @@ def build_map_data_packet(map_hex: str, x: str, y: str) -> str:
 def build_bulk_data_packet(map_hex: str) -> str:
     """Build bulk action data with current map reference."""
     map_padded = map_hex.zfill(8)
-    return f"110000000000000000{map_padded}"
+    return f"110000000000000000{map_padded}000220c9"
 
 
 def build_warp_exit_packet(portal_id: str, current_map: str) -> str:
