@@ -10,7 +10,7 @@ iptables -t nat -A OUTPUT -p tcp --dport 31096 -j DNAT --to-destination 192.168.
 
 
 #server4
-iptables -t nat -A OUTPUT -p tcp --dport 30004 -j DNAT --to-destination 192.168.1.20:30004
+iptables -t nat -A OUTPUT -p tcp --dport 30004 -j DNAT --to-destination 192.168.1.23:30004
 
 wind ark
 000e0110000138800000320000000f00
@@ -36,7 +36,7 @@ import tkinter as tk
 from datetime import datetime
 
 # Configuration
-PROXY_HOST = '192.168.1.20'
+PROXY_HOST = '192.168.1.23'
 PROXY_PORT = 30004
 SERVER_HOST = '202.239.51.41'
 SERVER_PORT = 30004

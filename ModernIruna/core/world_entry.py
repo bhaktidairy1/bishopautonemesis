@@ -213,12 +213,38 @@ def enter_world(sock, char_id_hex: str):
     if motion_ack:
         _extract_0111_spawn(binascii.hexlify(motion_ack).decode())
 
-    # Step 13: World Ticks
-    _send_and_log(sock, "000411000003", "Tick Setup")
-    _send_and_log(sock, PKT_WORLD_TICKS, "World Ticks Start")
-    _send_and_log(sock, build_world_ticks_packet(), "World Ticks")
+    # Step 13: World Ticks & Map Entry Confirm
+    _send_and_log(sock, PKT_WORLD_TICKS, "World Ticks Start") # 00025003
+    
+    # 3006 Map Entry Handshake (Required to fully confirm map entry)
+    _send_and_log(sock, "0003300601", "Map Entry Sync Start")
+    
+    # 3002 packet 1 (using the new map)
+    entry_pkt_1 = f"000f30021100000006000000000000{state.current_map_hex.zfill(8)}"
+    _send_and_log(sock, entry_pkt_1, "Map Entry 3002 1")
+    
+    # Coords heartbeat
+    coords_hex = state.last_map_coords
+    _send_and_log(sock, f"00060101{coords_hex}", "Coords Heartbeat")
+    
+    # 3002 packet 2 and 3
+    entry_pkt_2 = f"000f30021000000006000000000000{state.current_map_hex.zfill(8)}"
+    _send_and_log(sock, entry_pkt_2, "Map Entry 3002 2")
+    _send_and_log(sock, entry_pkt_2, "Map Entry 3002 3")
+    
+    _send_and_log(sock, "0003300600", "Map Entry Sync End")
+    _send_and_log(sock, f"00060101{coords_hex}", "Coords Heartbeat")
 
-    hex_recv(sock, label="Server Update")
+    # Read the final sync responses
+    try:
+        old_timeout = sock.gettimeout()
+        sock.settimeout(0.5)
+        while True:
+            hex_recv(sock, label="Server Update")
+    except Exception:
+        pass # timeout reached
+    finally:
+        sock.settimeout(old_timeout)
 
     # current_map_hex already set by _parse_spawn_coords from b503
 
