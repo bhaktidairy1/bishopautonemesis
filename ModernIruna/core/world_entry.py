@@ -189,15 +189,18 @@ def enter_world(sock, char_id_hex: str):
         _send_and_log(sock, pkt, "Magic Bundle Pkt", delay=0.01)
 
     # Now we read the server's responses (013a, b503, 0240, etc.)
-    # We'll set a short timeout and read until it times out.
+    # We'll break early once we get the b503 spawn coordinates packet.
     old_timeout = sock.gettimeout()
     sock.settimeout(1.0)
     try:
-        while True:
+        for _ in range(10):
             chunk = hex_recv(sock, label="Map Entry Sync")
-            login_buffer += binascii.hexlify(chunk).decode()
+            h = binascii.hexlify(chunk).decode()
+            login_buffer += h
+            if "b503" in h:
+                break
     except Exception:
-        pass # timeout reached, we've received everything the server sent
+        pass # timeout reached or connection closed
     finally:
         sock.settimeout(old_timeout)
 
@@ -207,7 +210,10 @@ def enter_world(sock, char_id_hex: str):
     # Step 12: Map Entry
     _send_and_log(sock, PKT_BULK_HEADER, "Bulk Header (3002)")
     bulk_data = build_bulk_data_packet(state.current_map_hex)
-    _send_and_log(sock, bulk_data, "Bulk Data (20c9)")
+    _send_and_log(sock, bulk_data, "Bulk Data Payload")
+    
+    # 20c9 Request Bulk Data
+    _send_and_log(sock, "000220c9", "Bulk Data Request (20c9)")
     
     motion_ack = hex_recv(sock, label="Map Entry Ack")
     if motion_ack:
@@ -220,7 +226,7 @@ def enter_world(sock, char_id_hex: str):
     _send_and_log(sock, "0003300601", "Map Entry Sync Start")
     
     # 3002 packet 1 (using the new map)
-    entry_pkt_1 = f"000f30021100000006000000000000{state.current_map_hex.zfill(8)}"
+    entry_pkt_1 = f"000f30021100000006000000000000{state.current_map_hex.zfill(4)}"
     _send_and_log(sock, entry_pkt_1, "Map Entry 3002 1")
     
     # Coords heartbeat
@@ -228,7 +234,7 @@ def enter_world(sock, char_id_hex: str):
     _send_and_log(sock, f"00060101{coords_hex}", "Coords Heartbeat")
     
     # 3002 packet 2 and 3
-    entry_pkt_2 = f"000f30021000000006000000000000{state.current_map_hex.zfill(8)}"
+    entry_pkt_2 = f"000f30021000000006000000000000{state.current_map_hex.zfill(4)}"
     _send_and_log(sock, entry_pkt_2, "Map Entry 3002 2")
     _send_and_log(sock, entry_pkt_2, "Map Entry 3002 3")
     

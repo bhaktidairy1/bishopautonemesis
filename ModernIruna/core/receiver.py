@@ -148,8 +148,9 @@ def handle_map_entities(payload: bytes):
         name = get_mob_name(full_id)
         
         if uid in state.monsters:
-            state.monsters[uid]['id'] = full_id
-            state.monsters[uid]['name'] = name
+            if not state.monsters[uid].get('is_player', False):
+                state.monsters[uid]['id'] = full_id
+                state.monsters[uid]['name'] = name
             state.monsters[uid]['x'] = x
             state.monsters[uid]['y'] = y
         else:
@@ -159,7 +160,7 @@ def handle_map_entities(payload: bytes):
                 'x': x,
                 'y': y
             }
-        print(f"[+] Radar tracked: {name} ({uid}) at ({x:.1f}, {y:.1f})")
+        print(f"[+] Radar tracked: {state.monsters[uid]['name']} ({uid}) at ({x:.1f}, {y:.1f})")
 def handle_0248_entity_def(payload: bytes):
     """
     Opcode 0x0248 - New Entity Definition.

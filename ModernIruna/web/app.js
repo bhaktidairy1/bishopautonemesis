@@ -834,18 +834,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const m = currentRadarState.mobs.find(m => m.uid === selectedRadarTarget);
         if (!m) return;
         
-        fetch("/api/auto_nemesis/start", {
+        fetch("/api/action", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ target_name: m.name, target_id: m.id })
+            body: JSON.stringify({ type: "start_auto_nemesis", target_name: m.name, target_id: m.id })
         });
         
         // Don't clear target so user can see it running
     });
     
     document.getElementById("radar-stop-nemesis-btn").addEventListener("click", () => {
-        fetch("/api/auto_nemesis/stop", {
-            method: "POST"
+        fetch("/api/action", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ type: "stop_auto_nemesis" })
         });
     });
     

@@ -635,16 +635,17 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
             state.waiting_for_hit.clear()
             
             # 3.5 Check Holy Spike
-            now = time.time()
-            if now - last_holy_spike_time > 33: # 35s duration
-                print(f"[*] Casting Holy Spike on {target.get('name', nearest_uid)}...")
-                spike_hex = "1cd8"
-                spike_cast = build_skill_cast_packet(spike_hex, nearest_uid)
-                hex_send(sock, spike_cast, "HOLY SPIKE CAST")
-                spike_exec = f"000a0141{spike_hex}0101{nearest_uid}"
-                hex_send(sock, spike_exec, "HOLY SPIKE EXECUTE")
-                last_holy_spike_time = now
-                time.sleep(0.5) # small delay before nemesis
+            if "holyspike" not in state.disabled_buffs:
+                now = time.time()
+                if now - last_holy_spike_time > 33: # 35s duration
+                    print(f"[*] Casting Holy Spike on {target.get('name', nearest_uid)}...")
+                    spike_hex = "1cd8"
+                    spike_cast = build_skill_cast_packet(spike_hex, nearest_uid)
+                    hex_send(sock, spike_cast, "HOLY SPIKE CAST")
+                    spike_exec = f"000a0141{spike_hex}0101{nearest_uid}"
+                    hex_send(sock, spike_exec, "HOLY SPIKE EXECUTE")
+                    last_holy_spike_time = now
+                    time.sleep(0.5) # small delay before nemesis
             
             # Nemesis Skill ID: 138f, Flag: 0101
             skill_hex = "138f"
