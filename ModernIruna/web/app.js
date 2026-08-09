@@ -343,6 +343,12 @@ document.addEventListener("DOMContentLoaded", () => {
             hexInput.value = "";
         }
     });
+    
+    // Ghost Mode / NPC Talk Toggle
+    const npcTalkBtn = document.getElementById("npc-talk-toggle-btn");
+    npcTalkBtn.addEventListener("click", () => {
+        sendAction({type: "toggle_npc_talk"});
+    });
 
     // Teleport
     const tpMapId = document.getElementById("tp-mapid");
@@ -578,8 +584,25 @@ document.addEventListener("DOMContentLoaded", () => {
             autoNemesisBtn.classList.add("primary");
             autoNemesisBtn.textContent = "AUTO NEMESIS LOOP";
             autoNemesisBtn.disabled = false; // Always enabled unless sequence is running
+        }
+        
+        // Handle Ghost Mode Status
+        if (state.npc_talk_mode) {
+            npcTalkBtn.style.background = "rgba(0, 255, 100, 0.2)";
+            npcTalkBtn.style.borderColor = "#00ff64";
+            npcTalkBtn.style.color = "#00ff64";
+            npcTalkBtn.textContent = "GHOST MODE: ON";
+        } else {
+            npcTalkBtn.style.background = "rgba(50, 50, 50, 0.2)";
+            npcTalkBtn.style.borderColor = "#888";
+            npcTalkBtn.style.color = "#888";
+            npcTalkBtn.textContent = "GHOST MODE: OFF";
+        }
+    
+        if (!state.auto_nemesis_running) {
             stopNemesisWarpBtn.disabled = true;
-        }    
+        }
+
         healBtn.disabled = false;
         sellBtn.disabled = false;
         

@@ -53,5 +53,7 @@ class GameState:
         self.in_island_map = False
         self.stall_items = []
         self.island_list = []
+        
+        self.npc_talk_mode = False
 
 state = GameState()

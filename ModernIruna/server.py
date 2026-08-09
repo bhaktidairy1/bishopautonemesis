@@ -247,6 +247,7 @@ def get_state():
         "stall_items": getattr(state, "stall_items", []),
         "island_list": getattr(state, "island_list", []),
         "is_island_mode": state.is_island_mode,
+        "npc_talk_mode": getattr(state, "npc_talk_mode", False),
         "disabled_buffs": list(getattr(state, "disabled_buffs", set()))
     })
 
@@ -681,6 +682,14 @@ def perform_action():
             enabled = False
             
         return jsonify({"success": True, "buff_id": buff_id, "enabled": enabled})
+        
+    elif action_type == "toggle_npc_talk":
+        state.npc_talk_mode = not getattr(state, "npc_talk_mode", False)
+        if client.sock:
+            from core.packet_helpers import hex_send
+            pkt = "0003300601" if state.npc_talk_mode else "0003300600"
+            hex_send(client.sock, pkt, label="NPC_TALK_TOGGLE")
+        return jsonify({"success": True, "npc_talk_mode": state.npc_talk_mode})
 
     return jsonify({"error": "Unknown action"}), 400
 
