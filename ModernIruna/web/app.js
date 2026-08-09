@@ -498,6 +498,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Auto Nemesis Button
     const autoNemesisBtn = document.getElementById("auto-nemesis-btn");
+    const stopNemesisWarpBtn = document.getElementById("stop-nemesis-warp-btn");
     
     autoZimovBtn.addEventListener("click", () => {
         if (autoZimovBtn.classList.contains("stop")) {
@@ -514,6 +515,11 @@ document.addEventListener("DOMContentLoaded", () => {
             sendAction({type: "start_auto_nemesis"});
         }
     });
+
+    stopNemesisWarpBtn.addEventListener("click", () => {
+        sendAction({type: "stop_auto_nemesis_warp"});
+    });
+
 
     // --- Renderers ---
     function updateControls(state) {
@@ -561,11 +567,13 @@ document.addEventListener("DOMContentLoaded", () => {
             autoNemesisBtn.classList.remove("primary");
             autoNemesisBtn.textContent = "STOP NEMESIS LOOP";
             autoNemesisBtn.disabled = false;
+            stopNemesisWarpBtn.disabled = false;
         } else {
             autoNemesisBtn.classList.remove("stop");
             autoNemesisBtn.classList.add("primary");
             autoNemesisBtn.textContent = "AUTO NEMESIS LOOP";
             autoNemesisBtn.disabled = false; // Always enabled unless sequence is running
+            stopNemesisWarpBtn.disabled = true;
         }    
         healBtn.disabled = false;
         sellBtn.disabled = false;

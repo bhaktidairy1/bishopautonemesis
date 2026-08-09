@@ -643,6 +643,18 @@ def perform_action():
         state.auto_nemesis_running = False
         return jsonify({"status": "auto_nemesis_stopped"})
         
+    elif action_type == "stop_auto_nemesis_warp":
+        state.auto_nemesis_running = False
+        if client.sock:
+            from core.world_entry import teleport
+            import time
+            def warp_to_town():
+                time.sleep(1.5) # Wait for loop to fully terminate
+                print("[*] Warping to Kakeula (25100)...")
+                teleport(client.sock, 25100, 87, 92)
+            threading.Thread(target=warp_to_town, daemon=True).start()
+        return jsonify({"status": "auto_nemesis_stopped_and_warping"})
+        
     elif action_type == "cast_buffs":
         from core.boss_module import cast_bishop_buffs
         if client.sock:
