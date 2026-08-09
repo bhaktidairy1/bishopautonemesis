@@ -233,6 +233,7 @@ def get_state():
         "inventory": state.inventory,
         "map_name": state.map_name,
         "current_map_hex": state.current_map_hex,
+        "auto_nemesis_running": getattr(state, "auto_nemesis_running", False),
         "auto_zimov_running": getattr(state, "auto_zimov_running", False),
         "auto_zimov_kill_count": getattr(state, "auto_zimov_kill_count", 0),
         "auto_zimov_run_count": getattr(state, "auto_zimov_run_count", 0),
@@ -646,7 +647,7 @@ def perform_action():
     elif action_type == "stop_auto_nemesis_warp":
         state.auto_nemesis_running = False
         if client.sock:
-            from core.world_entry import teleport
+            from core.map_teleport import teleport
             import time
             def warp_to_town():
                 time.sleep(1.5) # Wait for loop to fully terminate

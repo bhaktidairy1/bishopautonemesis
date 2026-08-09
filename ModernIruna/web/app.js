@@ -518,6 +518,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     stopNemesisWarpBtn.addEventListener("click", () => {
         sendAction({type: "stop_auto_nemesis_warp"});
+        stopNemesisWarpBtn.textContent = "WARPING...";
+        stopNemesisWarpBtn.disabled = true;
+        setTimeout(() => {
+            stopNemesisWarpBtn.textContent = "STOP & WARP TOWN";
+        }, 3000);
     });
 
 
