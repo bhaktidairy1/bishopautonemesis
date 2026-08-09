@@ -166,7 +166,23 @@ def teleport(sock, map_id: int, x: int = None, y: int = None):
         if state.teleport_event.wait(timeout=5.0):
             if state.teleport_success:
                 print(f"[+] Server confirmed teleport to {name} (0x{map_hex}). Coords: {x_shifted}{y_shifted}")
-                # 0110 teleport is instant and bypasses 0138/3003 sequence!
+                
+                # Wait for 0138 Map Ready
+                if not state.map_ready_event.wait(timeout=5.0):
+                    print("[-] Teleport timeout waiting for 0138 Map Ready. Aborting sequence.")
+                    state.paused = was_paused
+                    return {"status": "timeout"}
+                    
+                state.map_data_event.clear()
+                
+                # Acknowledge Map Ready and enter
+                from core.packets import PKT_MAP_SYNC_BEGIN, build_warp_entry_packet
+                hex_send(sock, PKT_MAP_SYNC_BEGIN, label="013a MAP SYNC BEGIN")
+                hex_send(sock, build_warp_entry_packet(map_hex), label="3002 ENTRY")
+                
+                # Optionally wait for 3003 Map Data
+                state.map_data_event.wait(timeout=5.0)
+                
                 state.paused = False
                 return {"status": "success", "map_id": map_id, "x": x, "y": y}
             else:
