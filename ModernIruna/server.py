@@ -647,7 +647,6 @@ def perform_action():
     elif action_type == "stop_auto_nemesis_warp":
         state.auto_nemesis_running = False
         if client.sock:
-            from core.map_teleport import teleport
             import time
             def warp_to_town():
                 time.sleep(1.5) # Wait for loop to fully terminate
