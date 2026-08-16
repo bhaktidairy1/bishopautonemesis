@@ -639,6 +639,11 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
             # Nemesis Skill ID: 138f, Flag: 0101
             skill_hex = "138f"
             
+            # Re-check if mob is still alive after possible Holy Spike delay
+            if nearest_uid not in state.monsters:
+                print(f"[*] Mob died or despawned before Nemesis cast. Retargeting...")
+                continue
+            
             # Clear events before casting
             state.skill_cast_confirm_event.clear()
             state.skill_exec_confirm_event.clear()
