@@ -529,12 +529,9 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
             # 0.5 Check if we accidentally changed maps
             if state.current_map_hex and int(state.current_map_hex, 16) != start_map_id:
                 if start_map_id == 700000:
-                    print("[*] PT Area expired! Waiting for background thread to re-create it...")
-                    while state.current_map_hex != "ae60" and state.auto_nemesis_running:
-                        time.sleep(1.0)
-                    if not state.auto_nemesis_running:
-                        break
-                    print("[*] Successfully resumed Auto-Nemesis in new PT Area!")
+                    print("[*] PT Area expired or map changed! Rejoining PT Area...")
+                    from core.pt_area import auto_rejoin_pt_area_thread
+                    auto_rejoin_pt_area_thread(sock)
                     continue
                 else:
                     print(f"[*] Map changed unexpectedly. Warping back to {start_map_id}...")
