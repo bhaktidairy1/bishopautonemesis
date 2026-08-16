@@ -13,6 +13,7 @@ class GameState:
         self.player_mp = 1
         self.player_max_hp = 1
         self.player_max_mp = 0
+        self.player_spina = 0
         self.waiting_for_hit = threading.Event()
         self.char_id_hex = ""
         self.damage_log = []

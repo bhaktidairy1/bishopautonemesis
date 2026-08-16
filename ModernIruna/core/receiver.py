@@ -367,27 +367,28 @@ def handle_0131_hp_mp(payload: bytes):
 def handle_0130_char_stats(payload: bytes):
     """
     Opcode 0x0130 — Initial Character Stats Sync.
-    Sent when joining a map or logging in. Contains Max HP and Max MP.
-    From trace: 0130 [26 bytes of unk] [HP(4)] [MP(4)]
+    Sent when joining a map or logging in. Contains Spina, Max HP, and Max MP.
+    From trace: 0130 [21 bytes unk] [Spina(4)] [MaxHP(4)] [MaxMP(4)]
     """
-    if len(payload) >= 34:
-        # Initial Max HP / MP
-        max_hp = int.from_bytes(payload[26:30], "big")
-        max_mp = int.from_bytes(payload[30:34], "big")
+    if len(payload) >= 33:
+        # Extract Spina, HP, MP
+        spina = int.from_bytes(payload[21:25], "big")
+        max_hp = int.from_bytes(payload[25:29], "big")
+        max_mp = int.from_bytes(payload[29:33], "big")
         
-        # We also set current to max since this happens on login/map change
+        # We set current to max since this happens on login/map change
         if 0 < max_hp < 500000 and 0 < max_mp < 100000:
             state.player_max_hp = max_hp
             state.player_max_mp = max_mp
+            state.player_spina = spina
             
-            # Only set current if we don't have one, otherwise we might overwrite
-            # with max when we are actually damaged (map changing while damaged)
-            if state.player_hp == 0:
+            # Only set current if we don't have one
+            if state.player_hp <= 1:
                 state.player_hp = max_hp
-            if state.player_mp == 0:
+            if state.player_mp <= 1:
                 state.player_mp = max_mp
                 
-            print(f"[*] Login Stats Loaded: HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
+            print(f"[*] Login Stats Loaded: Spina: {spina} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
         else:
             # Fallback heuristic if offset shifts
             pass
