@@ -649,16 +649,33 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
             
             # Nemesis Skill ID: 138f, Flag: 0101
             skill_hex = "138f"
+            
+            # Clear events before casting
+            state.skill_cast_confirm_event.clear()
+            state.skill_exec_confirm_event.clear()
+            
             cast_pkt = build_skill_cast_packet(skill_hex, nearest_uid)
-            hex_send(sock, cast_pkt, "SKILL CAST")
+            hex_send(sock, cast_pkt, "NEMESIS CAST")
+            
+            # Wait for Server to confirm cast started (014300)
+            if not state.skill_cast_confirm_event.wait(timeout=2.0):
+                print("[-] Nemesis Cast Timeout! Server didn't confirm cast.")
+                time.sleep(0.5)
+                continue
             
             execute_pkt = f"000a0141{skill_hex}0101{nearest_uid}"
-            hex_send(sock, execute_pkt, "SKILL EXECUTE")
+            hex_send(sock, execute_pkt, "NEMESIS EXECUTE")
+            
+            # Wait for Server to confirm damage execution (0142)
+            if not state.skill_exec_confirm_event.wait(timeout=2.0):
+                print("[-] Nemesis Execute Timeout! Server didn't confirm damage.")
+                time.sleep(0.5)
+                continue
             
             state.target_uid = nearest_uid
             
-            # Wait 1 second before next cast
-            time.sleep(1.0)
+            # Tiny safety delay after full confirmation before next loop
+            time.sleep(0.1)
             
     except Exception as e:
         print(f"[-] Auto-Nemesis Loop Error: {e}")

@@ -246,9 +246,23 @@ def handle_0142_skill_result(payload: bytes):
             
             offset += 9
             
-        # Signal that a skill has finished casting/executing
+        # Signal that a skill has finished executing
         if caster == state.char_id_hex:
             state.skill_cast_event.set()
+            if skill_id == "138f":
+                state.skill_exec_confirm_event.set()
+
+def handle_0143_skill_cast(payload: bytes):
+    """
+    Opcode 0x0143 — Skill Cast (Start or Confirm).
+    If payload is [Skill(2)][00], it's a confirmation we started casting.
+    """
+    import binascii
+    if len(payload) >= 3:
+        skill_id = binascii.hexlify(payload[0:2]).decode()
+        flag = payload[2]
+        if flag == 0x00 and skill_id == "138f": # Nemesis cast confirm
+            state.skill_cast_confirm_event.set()
 
 def handle_0132_exp(payload: bytes):
     """
@@ -534,6 +548,7 @@ HANDLERS = {
     0x0131: handle_0131_hp_mp,
     0x0132: handle_0132_exp,
     0x0142: handle_0142_skill_result,
+    0x0143: handle_0143_skill_cast,
     0x0242: handle_0242_attack,
     0x0244: handle_entity_death,
     0x0246: handle_0246_skill_ready,

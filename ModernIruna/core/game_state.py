@@ -29,6 +29,9 @@ class GameState:
         self.pending_skill_hex = None
         self.skill_cast_event = threading.Event()
         
+        self.skill_cast_confirm_event = threading.Event()
+        self.skill_exec_confirm_event = threading.Event()
+        
         # Party System
         self.party_members = {}
         self.pending_party_invite = None
