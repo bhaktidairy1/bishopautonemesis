@@ -207,7 +207,12 @@ def kakeula_heal_thread(sock, return_map_id=15900, return_x=67, return_y=128):
 
         # Step 3: Teleport back
         print(f"[*] Returning to Map {return_map_id}...")
-        teleport(sock, return_map_id, return_x, return_y)
+        if return_map_id == 700000:
+            print("[*] Rejoining PT Area...")
+            from core.pt_area import auto_rejoin_pt_area_thread
+            auto_rejoin_pt_area_thread(sock)
+        else:
+            teleport(sock, return_map_id, return_x, return_y)
 
         print("\n[+] Heal Sequence Complete.")
 
