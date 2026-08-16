@@ -670,6 +670,9 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
                     print("[CRITICAL] 3 consecutive skill failures. Disconnecting for safety.")
                     sock.close()
                     break
+                # Proactively remove the invalid target so we don't instantly retry it
+                if nearest_uid in state.monsters:
+                    del state.monsters[nearest_uid]
                 continue
             
             execute_pkt = f"000a0141{skill_hex}0101{nearest_uid}"
@@ -688,6 +691,9 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
                     print("[CRITICAL] 3 consecutive skill failures. Disconnecting for safety.")
                     sock.close()
                     break
+                # Proactively remove the invalid target so we don't instantly retry it
+                if nearest_uid in state.monsters:
+                    del state.monsters[nearest_uid]
                 continue
                 
             # Reset fail count on successful cast
