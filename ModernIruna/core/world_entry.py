@@ -283,16 +283,7 @@ def enter_world(sock, char_id_hex: str):
     _send_and_log(sock, "0003300600", "Map Entry Sync End")
     _send_and_log(sock, f"00060101{coords_hex}", "Coords Heartbeat")
 
-    # Read the final sync responses
-    try:
-        old_timeout = sock.gettimeout()
-        sock.settimeout(0.5)
-        while True:
-            hex_recv(sock, label="Server Update")
-    except Exception:
-        pass # timeout reached
-    finally:
-        sock.settimeout(old_timeout)
+    # The main receiver thread will handle all subsequent packets (including server updates and entities)
 
     # current_map_hex already set by _parse_spawn_coords from b503
 
