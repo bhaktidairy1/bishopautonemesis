@@ -466,57 +466,15 @@ def perform_action():
         if not client.sock:
             return jsonify({"error": "Not connected"}), 400
             
-        from core.packet_helpers import hex_send
-        from core.packets import build_warp_entry_packet
-        import time
-        
         def _join_pt_area():
             try:
+                # Save the base map so auto-rejoin knows what to join later
                 map_hex = getattr(state, 'current_map_hex', '00030d42')
                 if len(map_hex) < 8: map_hex = map_hex.zfill(8)
+                state.pt_area_base_map_hex = map_hex
                 
-                print(f"[*] Initiating PT Area Join Sequence for Map {map_hex}...")
-                
-                # 1. Handshake 2
-                hex_send(client.sock, "0002b502", "PT_AREA_2")
-                time.sleep(0.4)
-                
-                # 2. Handshake 9
-                hex_send(client.sock, "0002b509", "PT_AREA_9")
-                time.sleep(1.2)
-                
-                state.map_ready_event.clear()
-                
-                # 3. Enter Area 
-                hex_send(client.sock, f"00120114000aae600000000000000000{map_hex}", "PT_AREA_ENTER")
-                
-                print("    [!] Waiting for Map Sync OK (b503)...")
-                if not state.map_ready_event.wait(timeout=10.0):
-                    print("[!] Timeout waiting for PT Area Map Sync OK.")
-                
-                time.sleep(0.1)
-                
-                # 4. Handshake 1
-                hex_send(client.sock, "0002b501", "PT_AREA_1")
-                time.sleep(0.2)
-                
-                # 5. Map Sync ACK
-                hex_send(client.sock, "0002013a", "MAP_SYNC_ACK")
-                
-                # 6. Map Entry Exit 
-                hex_send(client.sock, build_warp_entry_packet(map_hex), "MAP_ENTRY")
-                
-                print("[+] Successfully joined PT Area.")
-                
-                time.sleep(1.0)
-                print("[*] Forcing position to safe spot (108, 180)...")
-                state.player_x = 108.0
-                state.player_y = 180.0
-                
-                from core.packets import build_coord_packet
-                from core.map_teleport import _make_heartbeat_coords
-                coords = _make_heartbeat_coords(108, 180)
-                hex_send(client.sock, build_coord_packet(coords), "FORCE COORD")
+                from core.pt_area import join_pt_area
+                join_pt_area(client.sock, map_hex)
                 
             except Exception as e:
                 print(f"[!] PT Area join error: {e}")
@@ -534,8 +492,12 @@ def perform_action():
         
         def _create_and_enter_pt_area():
             try:
+                map_hex = getattr(state, 'current_map_hex', '00030d42')
+                if len(map_hex) < 8: map_hex = map_hex.zfill(8)
+                state.pt_area_base_map_hex = map_hex
+                
                 from core.pt_area import create_and_enter_pt_area
-                create_and_enter_pt_area(client.sock)
+                create_and_enter_pt_area(client.sock, map_hex)
             except Exception as e:
                 print(f"[!] PT Area error: {e}")
                 

@@ -207,7 +207,7 @@ def kakeula_heal_thread(sock, return_map_id=15900, return_x=67, return_y=128):
 
         # Step 3: Teleport back
         print(f"[*] Returning to Map {return_map_id}...")
-        if return_map_id == 700000:
+        if return_map_id == 44640:
             print("[*] Rejoining PT Area...")
             from core.pt_area import auto_rejoin_pt_area_thread
             auto_rejoin_pt_area_thread(sock)
@@ -516,7 +516,7 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
                 print("[*] Waiting to arrive in town...")
                 time.sleep(6.0) # Wait for 0111 and map sync to finish
                 
-                if start_map_id == 700000:
+                if start_map_id == 44640:
                     print("[*] Died in PT Area. Auto-rejoining...")
                     from core.pt_area import auto_rejoin_pt_area_thread
                     auto_rejoin_pt_area_thread(sock)
@@ -533,7 +533,7 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
 
             # 0.5 Check if we accidentally changed maps
             if state.current_map_hex and int(state.current_map_hex, 16) != start_map_id:
-                if start_map_id == 700000:
+                if start_map_id == 44640:
                     print("[*] PT Area expired or map changed! Rejoining PT Area...")
                     from core.pt_area import auto_rejoin_pt_area_thread
                     auto_rejoin_pt_area_thread(sock)
