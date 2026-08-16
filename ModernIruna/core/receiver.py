@@ -368,30 +368,35 @@ def handle_0130_char_stats(payload: bytes):
     """
     Opcode 0x0130 — Initial Character Stats Sync.
     Sent when joining a map or logging in. Contains Spina, Max HP, and Max MP.
-    From trace: 0130 [21 bytes unk] [Spina(4)] [MaxHP(4)] [MaxMP(4)]
+    The packet has variable length boolean flags (010101...), so fixed offsets fail.
     """
-    if len(payload) >= 33:
-        # Extract Spina, HP, MP
-        spina = int.from_bytes(payload[21:25], "big")
-        max_hp = int.from_bytes(payload[25:29], "big")
-        max_mp = int.from_bytes(payload[29:33], "big")
-        
-        # We set current to max since this happens on login/map change
-        if 0 < max_hp < 500000 and 0 < max_mp < 100000:
-            state.player_max_hp = max_hp
-            state.player_max_mp = max_mp
-            state.player_spina = spina
+    import re
+    data_hex = binascii.hexlify(payload).decode()
+    try:
+        # 00010001 [Variable 01s] 000100 [9 bytes/18 chars unknown] [Spina(8)] [MaxHP(8)] [MaxMP(8)]
+        match = re.search(r'00010001(?:01)+000100.{18}(.{8})(.{8})(.{8})', data_hex)
+        if match:
+            spina_hex, hp_hex, mp_hex = match.groups()
             
-            # Only set current if we don't have one
-            if state.player_hp <= 1:
-                state.player_hp = max_hp
-            if state.player_mp <= 1:
-                state.player_mp = max_mp
+            spina = int(spina_hex, 16)
+            max_hp = int(hp_hex, 16)
+            max_mp = int(mp_hex, 16)
+            
+            # We set current to max since this happens on login/map change
+            if 0 < max_hp < 500000 and 0 < max_mp < 100000:
+                state.player_max_hp = max_hp
+                state.player_max_mp = max_mp
+                state.player_spina = spina
                 
-            print(f"[*] Login Stats Loaded: Spina: {spina} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
-        else:
-            # Fallback heuristic if offset shifts
-            pass
+                # Only set current if we don't have one
+                if state.player_hp <= 1:
+                    state.player_hp = max_hp
+                if state.player_mp <= 1:
+                    state.player_mp = max_mp
+                    
+                print(f"[*] Login Stats Loaded: Spina: {spina:,} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
+    except Exception as e:
+        print(f"[-] Failed to parse 0130 stats in receiver: {e}")
 
 def handle_0242_attack(payload: bytes):
     """

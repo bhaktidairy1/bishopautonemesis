@@ -105,25 +105,19 @@ def _extract_0130_stats(data_hex: str):
     """
     Extract Spina, Max HP, and Max MP from the 0130 Character Stats packet
     that is sent during the world entry sequence.
-    Format: 000000530130 [42 chars unk] [Spina(8 chars)] [MaxHP(8 chars)] [MaxMP(8 chars)]
+    The packet has variable length boolean flags (010101...), so fixed offsets fail.
+    We use regex to skip the variable flags and grab the exact 4-byte integers.
     """
-    # The packet length is exactly 0x53 (83 bytes). 
-    idx = data_hex.find("000000530130")
+    import re
+    idx = data_hex.find("013000010001")
     if idx == -1:
-        # Fallback to search without the strict length if it ever changes slightly
-        idx = data_hex.find("0130000100010101")
-        if idx == -1:
-            return False
-        # If we found it via fallback, adjust index so logic below works 
-        # (assume 4 byte length preceded it)
-        idx = idx - 8 
+        return False
 
     try:
-        payload_hex = data_hex[idx + 12:]
-        if len(payload_hex) >= 66:
-            spina_hex = payload_hex[42:50]
-            hp_hex = payload_hex[50:58]
-            mp_hex = payload_hex[58:66]
+        # 013000010001 [Variable 01s] 000100 [9 bytes/18 chars unknown] [Spina(8)] [MaxHP(8)] [MaxMP(8)]
+        match = re.search(r'013000010001(?:01)+000100.{18}(.{8})(.{8})(.{8})', data_hex[idx:])
+        if match:
+            spina_hex, hp_hex, mp_hex = match.groups()
             
             spina = int(spina_hex, 16)
             max_hp = int(hp_hex, 16)
@@ -139,7 +133,7 @@ def _extract_0130_stats(data_hex: str):
                 if state.player_mp <= 1:
                     state.player_mp = max_mp
                     
-                print(f"[+] Login Stats Parsed: Spina: {spina} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
+                print(f"[+] Login Stats Parsed: Spina: {spina:,} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
                 return True
     except Exception as e:
         print(f"[-] Failed to parse 0130 stats: {e}")
