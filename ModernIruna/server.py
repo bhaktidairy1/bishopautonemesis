@@ -84,7 +84,7 @@ class WebLogRedirector:
             
             try:
                 from core.packet_helpers import write_log
-                if not line.startswith("<- [RECV]") and not line.startswith("C->S"):
+                if not line.startswith("<- [RECV]") and not line.startswith("C->S") and not line.startswith("-> "):
                     write_log(line)
             except:
                 pass
