@@ -20,6 +20,8 @@ def create_and_enter_pt_area(sock, map_hex=None):
     time.sleep(1.2)
     
     state.map_ready_event.clear()
+    
+    # When creating, current map is the base map
     hex_send(sock, f"00120114000aae600000000000000000{map_hex}", "PT_AREA_ENTER")
     
     print("    [!] Waiting for Map Sync OK (b503)...")
@@ -33,7 +35,6 @@ def create_and_enter_pt_area(sock, map_hex=None):
     hex_send(sock, build_warp_entry_packet(map_hex), "MAP_ENTRY")
     print("[+] Successfully entered PT Area.")
     
-    # 8. Force position to a safe spot (108, 180) to avoid instantly pulling aggro
     time.sleep(1.0)
     print("[*] Forcing position to safe spot (108, 180)...")
     state.player_x = 108.0
@@ -62,8 +63,10 @@ def join_pt_area(sock, map_hex=None):
     
     state.map_ready_event.clear()
     
-    # 3. Enter Area 
-    hex_send(sock, f"00120114000aae600000000000000000{map_hex}", "PT_AREA_ENTER")
+    # 3. Enter Area
+    current_map = getattr(state, 'current_map_hex', '00030d42')
+    if len(current_map) < 8: current_map = current_map.zfill(8)
+    hex_send(sock, f"00120114000aae600000000000000000{current_map}", "PT_AREA_ENTER")
     
     print("    [!] Waiting for Map Sync OK (b503)...")
     if not state.map_ready_event.wait(timeout=10.0):
@@ -78,7 +81,7 @@ def join_pt_area(sock, map_hex=None):
     # 5. Map Sync ACK
     hex_send(sock, "0002013a", "MAP_SYNC_ACK")
     
-    # 6. Map Entry Exit 
+    # 6. Map Entry Exit (Always uses the base map!)
     hex_send(sock, build_warp_entry_packet(map_hex), "MAP_ENTRY")
     
     print("[+] Successfully joined PT Area.")
@@ -102,12 +105,5 @@ def auto_rejoin_pt_area_thread(sock):
     
     base_map = getattr(state, 'pt_area_base_map_hex', '00030d42')
     
-    # Check if we are already in the base map. If not, we might need to teleport there first?
-    # Wait, the join sequence requires you to be in the base map FIRST!
-    if state.current_map_hex and int(state.current_map_hex, 16) != int(base_map, 16):
-        print(f"[*] Teleporting to base map {base_map} before joining PT Area...")
-        teleport(sock, int(base_map, 16), 108, 180)
-        time.sleep(2.0)
-    
-    # Join the existing PT Area
+    # Join the existing PT Area (no need to teleport first, we can join from anywhere!)
     join_pt_area(sock, base_map)
