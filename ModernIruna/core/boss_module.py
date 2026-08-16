@@ -552,17 +552,6 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
                 time.sleep(1.5)
                 continue
                 
-            # 1.5 Check HP and Self Heal
-            if getattr(state, "player_hp", 0) < 20000:
-                print(f"[*] HP ({state.player_hp}) below 20,000! Casting Bright Heal...")
-                heal_hex = "1c36"
-                cast_pkt = build_skill_cast_packet(heal_hex, state.char_id_hex)
-                hex_send(sock, cast_pkt, "SELF HEAL CAST")
-                execute_pkt = f"000a0141{heal_hex}0001{state.char_id_hex}"
-                hex_send(sock, execute_pkt, "SELF HEAL EXECUTE")
-                time.sleep(1.5) # Wait for heal to finish
-                continue
-                
             # 1.8 Check Buffs Individually
             now = time.time()
             if now - last_buff_times["revelation"] > 590: # 10 mins (600s), slightly less for safety

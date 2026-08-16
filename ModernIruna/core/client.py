@@ -54,24 +54,30 @@ class IrunaClient:
             self.is_connected = False
             return False
 
-
-
         # Phase 3: Request inventory sync
         # We send the request here, but we do NOT block waiting for the response.
-        # The background receiver thread will naturally catch the 0120 packets.
-        try:
-            hex_send(self.sock, PKT_INVENTORY_REQ, label="Inventory Request")
-        except Exception as e:
-            print(f"[-] Inventory request failed: {e}")
+        # The receiver thread will catch the 0120 payload asynchronously.
+        hex_send(self.sock, PKT_INVENTORY_REQ, "INVENTORY REQ")
+        print("[*] Requested full inventory sync...")
 
-        # Phase 4: Start background threads
-        print("\n[+] Game session established. Starting threads...")
+        # Phase 4: Spin up all daemon threads
+        state.stop_event.clear()
+        state.paused = False
+
+        from core.combat import health_monitor_thread
+
+        t1 = threading.Thread(target=continuous_receiver, args=(self.sock,), daemon=True)
+        t2 = threading.Thread(target=coordinate_sender, args=(self.sock,), daemon=True)
+        t3 = threading.Thread(target=combat_engine, args=(self.sock,), daemon=True)
+        t4 = threading.Thread(target=health_monitor_thread, args=(self.sock,), daemon=True)
+
+        t1.start()
+        t2.start()
+        t3.start()
+        t4.start()
+
+        print("\n[+] Game session established. Threads started.")
         self.is_connected = True
-
-        threading.Thread(target=coordinate_sender, args=(self.sock,), daemon=True).start()
-        threading.Thread(target=continuous_receiver, args=(self.sock,), daemon=True).start()
-        threading.Thread(target=combat_engine, args=(self.sock,), daemon=True).start()
-
         return True
 
     def disconnect(self):

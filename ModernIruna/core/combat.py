@@ -138,3 +138,34 @@ def combat_engine(sock):
         else: # MANUAL mode
             # In manual mode, we just wait. We don't spam basic attacks.
             time.sleep(0.5)
+
+def health_monitor_thread(sock):
+    """
+    Dedicated background thread to monitor HP and cast Bright Heal asynchronously.
+    Runs entirely independently from the main Auto Nemesis or Boss loops.
+    This guarantees we can heal even if Nemesis is waiting on server confirmation.
+    """
+    from core.packets import build_skill_cast_packet
+    
+    last_heal_time = 0
+    
+    while not state.stop_event.is_set():
+        if state.paused or state.player_hp == 0 or state.is_island_mode:
+            time.sleep(0.5)
+            continue
+            
+        # Only heal if HP drops below 20k and it's been at least 2 seconds since last heal
+        now = time.time()
+        if getattr(state, "player_hp", 0) < 20000 and (now - last_heal_time > 2.0):
+            # Also ensure we only auto-heal if we are in a combat loop (nemesis or zimov)
+            if getattr(state, "auto_nemesis_running", False) or getattr(state, "auto_zimov_running", False):
+                print(f"[*] HEALTH MONITOR: HP ({state.player_hp}) below 20,000! Casting Bright Heal...")
+                heal_hex = "1c36"
+                cast_pkt = build_skill_cast_packet(heal_hex, state.char_id_hex)
+                hex_send(sock, cast_pkt, "SELF HEAL CAST")
+                execute_pkt = f"000a0141{heal_hex}0001{state.char_id_hex}"
+                hex_send(sock, execute_pkt, "SELF HEAL EXECUTE")
+                last_heal_time = time.time()
+                
+        # Fast poll rate for high responsiveness
+        time.sleep(0.1)
