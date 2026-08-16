@@ -665,9 +665,9 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
                 
             if getattr(state, "skill_failed", False):
                 state.nemesis_fail_count += 1
-                print(f"[-] Nemesis Cast Rejected (0143ff). Mob likely died. (Fail Count: {state.nemesis_fail_count}/10)")
-                if state.nemesis_fail_count >= 10:
-                    print("[CRITICAL] 10 consecutive skill failures. Disconnecting for safety.")
+                print(f"[-] Nemesis Cast Rejected (0143ff). Mob likely died. (Fail Count: {state.nemesis_fail_count}/3)")
+                if state.nemesis_fail_count >= 3:
+                    print("[CRITICAL] 3 consecutive skill failures. Disconnecting for safety.")
                     sock.close()
                     break
                 continue
@@ -683,9 +683,9 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
                 
             if getattr(state, "skill_failed", False):
                 state.nemesis_fail_count += 1
-                print(f"[-] Nemesis Execute Rejected (0141ff). Mob likely died. (Fail Count: {state.nemesis_fail_count}/10)")
-                if state.nemesis_fail_count >= 10:
-                    print("[CRITICAL] 10 consecutive skill failures. Disconnecting for safety.")
+                print(f"[-] Nemesis Execute Rejected (0141ff). Mob likely died. (Fail Count: {state.nemesis_fail_count}/3)")
+                if state.nemesis_fail_count >= 3:
+                    print("[CRITICAL] 3 consecutive skill failures. Disconnecting for safety.")
                     sock.close()
                     break
                 continue
