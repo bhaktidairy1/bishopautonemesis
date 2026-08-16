@@ -101,6 +101,51 @@ def _extract_0111_spawn(data_hex: str):
     return False
 
 
+def _extract_0130_stats(data_hex: str):
+    """
+    Extract Spina, Max HP, and Max MP from the 0130 Character Stats packet
+    that is sent during the world entry sequence.
+    Format: 000000530130 [42 chars unk] [Spina(8 chars)] [MaxHP(8 chars)] [MaxMP(8 chars)]
+    """
+    # The packet length is exactly 0x53 (83 bytes). 
+    idx = data_hex.find("000000530130")
+    if idx == -1:
+        # Fallback to search without the strict length if it ever changes slightly
+        idx = data_hex.find("0130000100010101")
+        if idx == -1:
+            return False
+        # If we found it via fallback, adjust index so logic below works 
+        # (assume 4 byte length preceded it)
+        idx = idx - 8 
+
+    try:
+        payload_hex = data_hex[idx + 12:]
+        if len(payload_hex) >= 66:
+            spina_hex = payload_hex[42:50]
+            hp_hex = payload_hex[50:58]
+            mp_hex = payload_hex[58:66]
+            
+            spina = int(spina_hex, 16)
+            max_hp = int(hp_hex, 16)
+            max_mp = int(mp_hex, 16)
+            
+            if 0 < max_hp < 500000 and 0 < max_mp < 100000:
+                state.player_max_hp = max_hp
+                state.player_max_mp = max_mp
+                state.player_spina = spina
+                
+                if state.player_hp <= 1:
+                    state.player_hp = max_hp
+                if state.player_mp <= 1:
+                    state.player_mp = max_mp
+                    
+                print(f"[+] Login Stats Parsed: Spina: {spina} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
+                return True
+    except Exception as e:
+        print(f"[-] Failed to parse 0130 stats: {e}")
+    return False
+
+
 def enter_world(sock, char_id_hex: str):
     """
     Run the full character-select → world-entry → presence-confirm
@@ -155,6 +200,9 @@ def enter_world(sock, char_id_hex: str):
 
     # Look for 0111 to override default spawn before we send 0110!
     _extract_0111_spawn(login_buffer)
+    
+    # Extract Character Stats (Spina, HP, MP) from the login buffer
+    _extract_0130_stats(login_buffer)
     
     # [!] CRITICAL FIX for broken cutscene state:
     # If the user disconnected during a boss fight (e.g., Zimov in 3e76), the server queues a cutscene upon login.
