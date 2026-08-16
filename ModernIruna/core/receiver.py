@@ -255,14 +255,15 @@ def handle_0142_skill_result(payload: bytes):
 def handle_0143_skill_cast(payload: bytes):
     """
     Opcode 0x0143 — Skill Cast (Start or Confirm).
-    If payload is [Skill(2)][00], it's a confirmation we started casting.
+    When the server confirms our cast, it sends a 3-byte packet: 00000003014300.
+    The payload is just a single byte: 0x00.
     """
-    import binascii
-    if len(payload) >= 3:
-        skill_id = binascii.hexlify(payload[0:2]).decode()
-        flag = payload[2]
-        if flag == 0x00 and skill_id == "138f": # Nemesis cast confirm
-            state.skill_cast_confirm_event.set()
+    if len(payload) == 1 and payload[0] == 0x00:
+        # Cast confirmed!
+        state.skill_cast_confirm_event.set()
+    elif len(payload) >= 3:
+        # Some other players casting something around us, not relevant to our confirm wait
+        pass
 
 def handle_0132_exp(payload: bytes):
     """
