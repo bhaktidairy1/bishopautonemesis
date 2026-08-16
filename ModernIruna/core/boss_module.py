@@ -478,6 +478,7 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
     # Save the custom target if provided
     state.auto_nemesis_target_name = target_name
     state.auto_nemesis_target_id = target_id
+    state.nemesis_fail_count = 0
     
     print("\n==================================================")
     print(f" [AUTO NEMESIS LOOP STARTED] Target: {target_name or 'Moss Golem'}")
@@ -649,26 +650,48 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
                 continue
             
             # Clear events before casting
+            state.skill_failed = False
             state.skill_cast_confirm_event.clear()
             state.skill_exec_confirm_event.clear()
             
             cast_pkt = build_skill_cast_packet(skill_hex, nearest_uid)
             hex_send(sock, cast_pkt, "NEMESIS CAST")
             
-            # Wait for Server to confirm cast started (014300)
+            # Wait for Server to confirm cast started (014300) or rejected (0143ff)
             if not state.skill_cast_confirm_event.wait(timeout=2.0):
                 print("[-] Nemesis Cast Timeout! Server didn't confirm cast.")
                 time.sleep(0.5)
+                continue
+                
+            if getattr(state, "skill_failed", False):
+                state.nemesis_fail_count += 1
+                print(f"[-] Nemesis Cast Rejected (0143ff). Mob likely died. (Fail Count: {state.nemesis_fail_count}/10)")
+                if state.nemesis_fail_count >= 10:
+                    print("[CRITICAL] 10 consecutive skill failures. Disconnecting for safety.")
+                    sock.close()
+                    break
                 continue
             
             execute_pkt = f"000a0141{skill_hex}0101{nearest_uid}"
             hex_send(sock, execute_pkt, "NEMESIS EXECUTE")
             
-            # Wait for Server to confirm damage execution (0142)
+            # Wait for Server to confirm damage execution (0142) or rejected (0141ff)
             if not state.skill_exec_confirm_event.wait(timeout=2.0):
                 print("[-] Nemesis Execute Timeout! Server didn't confirm damage.")
                 time.sleep(0.5)
                 continue
+                
+            if getattr(state, "skill_failed", False):
+                state.nemesis_fail_count += 1
+                print(f"[-] Nemesis Execute Rejected (0141ff). Mob likely died. (Fail Count: {state.nemesis_fail_count}/10)")
+                if state.nemesis_fail_count >= 10:
+                    print("[CRITICAL] 10 consecutive skill failures. Disconnecting for safety.")
+                    sock.close()
+                    break
+                continue
+                
+            # Reset fail count on successful cast
+            state.nemesis_fail_count = 0
             
             state.target_uid = nearest_uid
             

@@ -257,13 +257,30 @@ def handle_0143_skill_cast(payload: bytes):
     Opcode 0x0143 — Skill Cast (Start or Confirm).
     When the server confirms our cast, it sends a 3-byte packet: 00000003014300.
     The payload is just a single byte: 0x00.
+    If the cast was cancelled (e.g. target died), the payload is 0xff.
     """
-    if len(payload) == 1 and payload[0] == 0x00:
-        # Cast confirmed!
-        state.skill_cast_confirm_event.set()
+    if len(payload) == 1:
+        if payload[0] == 0x00:
+            # Cast confirmed!
+            state.skill_cast_confirm_event.set()
+        elif payload[0] == 0xff:
+            # Cast rejected / interrupted
+            state.skill_failed = True
+            state.skill_cast_confirm_event.set()
     elif len(payload) >= 3:
         # Some other players casting something around us, not relevant to our confirm wait
         pass
+
+def handle_0141_skill_exec(payload: bytes):
+    """
+    Opcode 0x0141 — Skill Execute.
+    Normally sent by client to execute damage, but server sends it with 0xff payload
+    if the execution failed (e.g. target died during cast).
+    """
+    if len(payload) == 1 and payload[0] == 0xff:
+        state.skill_failed = True
+        state.skill_exec_confirm_event.set()
+
 
 def handle_0132_exp(payload: bytes):
     """
@@ -554,6 +571,7 @@ HANDLERS = {
     0x0130: handle_0130_char_stats,
     0x0131: handle_0131_hp_mp,
     0x0132: handle_0132_exp,
+    0x0141: handle_0141_skill_exec,
     0x0142: handle_0142_skill_result,
     0x0143: handle_0143_skill_cast,
     0x0242: handle_0242_attack,

@@ -32,6 +32,8 @@ class GameState:
         
         self.skill_cast_confirm_event = threading.Event()
         self.skill_exec_confirm_event = threading.Event()
+        self.skill_failed = False
+        self.nemesis_fail_count = 0
         
         # Party System
         self.party_members = {}
