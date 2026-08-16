@@ -245,6 +245,18 @@ def toggle_auto_attack():
 btn_auto_attack = tk.Button(flow_control_frame, text="Auto Attack: OFF", command=toggle_auto_attack)
 btn_auto_attack.grid(row=0, column=1, padx=5, pady=5)
 
+# Log Filters Frame
+filter_frame = tk.LabelFrame(root, text="Log Filters (Opcodes to Hide)")
+filter_frame.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
+
+tk.Label(filter_frame, text="Hide C→S:").grid(row=0, column=0, sticky="w", padx=5, pady=2)
+cs_filter_entry = tk.Entry(filter_frame, width=20)
+cs_filter_entry.grid(row=0, column=1, padx=5, pady=2)
+
+tk.Label(filter_frame, text="Hide S→C:").grid(row=1, column=0, sticky="w", padx=5, pady=2)
+sc_filter_entry = tk.Entry(filter_frame, width=20)
+sc_filter_entry.grid(row=1, column=1, padx=5, pady=2)
+
 noise = bytes.fromhex('00000011020100000001004a04b59d006600ffff00')
 coords = bytes.fromhex('63002800')
 precoords = bytes.fromhex('00060101')
@@ -317,7 +329,56 @@ def relay(src, dst, label):
 
             # Always forward original packet if flow active
             if packet_flow_active:
-                log(format_packet(label, data.hex()))
+                buffer = data
+                offset = 0
+                
+                cs_filters = [f.strip() for f in cs_filter_entry.get().lower().split(',') if f.strip()]
+                sc_filters = [f.strip() for f in sc_filter_entry.get().lower().split(',') if f.strip()]
+                
+                while offset < len(buffer):
+                    sub_hex = ""
+                    if label == 'S→C':
+                        if len(buffer) - offset < 6:
+                            sub_hex = buffer[offset:].hex()
+                            offset = len(buffer)
+                        else:
+                            pkt_len = int.from_bytes(buffer[offset:offset+4], "big")
+                            total = pkt_len + 4
+                            if pkt_len > 10000 or pkt_len == 0 or offset + total > len(buffer):
+                                sub_hex = buffer[offset:].hex()
+                                offset = len(buffer)
+                            else:
+                                sub_hex = buffer[offset:offset+total].hex()
+                                offset += total
+                    else: # 'C→S'
+                        if len(buffer) - offset < 4:
+                            sub_hex = buffer[offset:].hex()
+                            offset = len(buffer)
+                        else:
+                            pkt_len = int.from_bytes(buffer[offset:offset+2], "big")
+                            total = pkt_len + 2
+                            if pkt_len > 10000 or pkt_len == 0 or offset + total > len(buffer):
+                                sub_hex = buffer[offset:].hex()
+                                offset = len(buffer)
+                            else:
+                                sub_hex = buffer[offset:offset+total].hex()
+                                offset += total
+                                
+                    skip = False
+                    if label == 'C→S':
+                        for f in cs_filters:
+                            if f in sub_hex:
+                                skip = True
+                                break
+                    elif label == 'S→C':
+                        for f in sc_filters:
+                            if f in sub_hex:
+                                skip = True
+                                break
+                        
+                    if not skip:
+                        log(format_packet(label, sub_hex))
+                        
                 dst.sendall(data)
                 
                 # Check for mob spawn and trigger auto-attack if active

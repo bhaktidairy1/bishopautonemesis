@@ -154,9 +154,10 @@ def health_monitor_thread(sock):
             time.sleep(0.5)
             continue
             
-        # Only heal if HP drops below 20k and it's been at least 2 seconds since last heal
+        # Only heal if HP drops below 20k (but is greater than 1 to avoid map-loading bugs),
+        # and it's been at least 2 seconds since last heal
         now = time.time()
-        if getattr(state, "player_hp", 0) < 20000 and (now - last_heal_time > 2.0):
+        if 1 < getattr(state, "player_hp", 0) < 20000 and (now - last_heal_time > 2.0):
             # Also ensure we only auto-heal if we are in a combat loop (nemesis or zimov)
             if getattr(state, "auto_nemesis_running", False) or getattr(state, "auto_zimov_running", False):
                 print(f"[*] HEALTH MONITOR: HP ({state.player_hp}) below 20,000! Casting Bright Heal...")
