@@ -627,6 +627,10 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
             if "holyspike" not in state.disabled_buffs:
                 now = time.time()
                 if now - last_holy_spike_time > 33: # 35s duration
+                    if nearest_uid not in state.monsters:
+                        print(f"[*] Mob died or despawned before Holy Spike cast. Retargeting...")
+                        continue
+                    
                     print(f"[*] Casting Holy Spike on {target.get('name', nearest_uid)}...")
                     spike_hex = "1cd8"
                     spike_cast = build_skill_cast_packet(spike_hex, nearest_uid)
