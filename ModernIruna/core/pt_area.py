@@ -70,7 +70,8 @@ def join_pt_area(sock, map_hex=None):
     
     print("    [!] Waiting for Map Sync OK (b503)...")
     if not state.map_ready_event.wait(timeout=10.0):
-        print("[!] Timeout waiting for PT Area Map Sync OK.")
+        print("[!] Timeout waiting for PT Area Map Sync OK. Instance may have expired.")
+        return False
     
     time.sleep(0.1)
     
@@ -95,15 +96,24 @@ def join_pt_area(sock, map_hex=None):
     from core.map_teleport import _make_heartbeat_coords
     coords = _make_heartbeat_coords(108, 180)
     hex_send(sock, build_coord_packet(coords), "FORCE COORD")
+    return True
 
 def auto_rejoin_pt_area_thread(sock):
     """
     Called when the PT Area expires or map changes.
-    Rejoins the existing PT area for the base map.
+    Rejoins the existing PT area for the base map, or creates a new one if it expired.
     """
     print("[*] Rejoining PT Area automatically...")
     
     base_map = getattr(state, 'pt_area_base_map_hex', '00030d42')
     
-    # Join the existing PT Area (no need to teleport first, we can join from anywhere!)
-    join_pt_area(sock, base_map)
+    # Try to join the existing PT Area (no need to teleport first, we can join from anywhere!)
+    success = join_pt_area(sock, base_map)
+    if not success:
+        print("[!] Join failed (PT area likely expired). Creating a new PT Area...")
+        # To create a new PT Area, we MUST be in the base map first!
+        from core.map_teleport import teleport
+        print(f"[*] Teleporting to base map {base_map} before creating PT Area...")
+        teleport(sock, int(base_map, 16), 108, 180)
+        time.sleep(2.0)
+        create_and_enter_pt_area(sock, base_map)
