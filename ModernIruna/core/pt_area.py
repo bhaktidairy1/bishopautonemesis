@@ -98,20 +98,36 @@ def join_pt_area(sock, map_hex=None):
     hex_send(sock, build_coord_packet(coords), "FORCE COORD")
     return True
 
-def auto_rejoin_pt_area_thread(sock):
+def auto_rejoin_pt_area_thread(sock, is_expired=False):
     """
     Called when the PT Area expires or map changes.
-    Rejoins the existing PT area for the base map, or creates a new one if it expired.
+    Rejoins the existing PT area or creates a new one depending on state.pta_rejoin_mode.
     """
-    print("[*] Rejoining PT Area automatically...")
-    
     base_map = getattr(state, 'pt_area_base_map_hex', '00030d42')
     
-    # Try to join the existing PT Area (no need to teleport first, we can join from anywhere!)
-    success = join_pt_area(sock, base_map)
-    if not success:
-        print("[!] Join failed (PT area likely expired). Creating a new PT Area...")
-        # To create a new PT Area, we MUST be in the base map first!
+    if not is_expired:
+        print("[*] Rejoining PT Area automatically (not expired)...")
+        success = join_pt_area(sock, base_map)
+        if not success:
+            print("[!] Failed to rejoin PT Area.")
+        return
+
+    print(f"[*] Map changed unexpectedly (PTA Expired). PTA Mode: {getattr(state, 'pta_rejoin_mode', 'NONE')}")
+    
+    mode = getattr(state, 'pta_rejoin_mode', 'NONE')
+    
+    if mode == "NONE":
+        print("[!] PTA Rejoin Mode is NONE. Aborting auto-rejoin.")
+        return
+        
+    print("[*] Waiting 65 seconds for server cool-down before taking PTA action...")
+    time.sleep(65.0)
+    
+    if mode == "REJOIN":
+        print("[*] Attempting to REJOIN existing PT Area...")
+        join_pt_area(sock, base_map)
+    elif mode == "CREATE":
+        print("[*] Attempting to CREATE new PT Area...")
         from core.map_teleport import teleport
         print(f"[*] Teleporting to base map {base_map} before creating PT Area...")
         teleport(sock, int(base_map, 16), 108, 180)

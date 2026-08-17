@@ -599,6 +599,36 @@ document.addEventListener("DOMContentLoaded", () => {
             npcTalkBtn.textContent = "GHOST MODE: OFF";
         }
     
+        // Auto PT Area Mode Sync
+        const rejoinBtn = document.getElementById("pta-mode-rejoin-btn");
+        const createBtn = document.getElementById("pta-mode-create-btn");
+        
+        if (state.pta_rejoin_mode === "REJOIN") {
+            rejoinBtn.style.background = "rgba(0,255,100,0.2)";
+            rejoinBtn.style.color = "#00ff64";
+            rejoinBtn.textContent = "AUTO REJOIN (ON)";
+            
+            createBtn.style.background = "rgba(100,100,100,0.2)";
+            createBtn.style.color = "#aaa";
+            createBtn.textContent = "AUTO CREATE (OFF)";
+        } else if (state.pta_rejoin_mode === "CREATE") {
+            createBtn.style.background = "rgba(255,200,50,0.2)";
+            createBtn.style.color = "#ffc832";
+            createBtn.textContent = "AUTO CREATE (ON)";
+            
+            rejoinBtn.style.background = "rgba(100,100,100,0.2)";
+            rejoinBtn.style.color = "#aaa";
+            rejoinBtn.textContent = "AUTO REJOIN (OFF)";
+        } else {
+            rejoinBtn.style.background = "rgba(100,100,100,0.2)";
+            rejoinBtn.style.color = "#aaa";
+            rejoinBtn.textContent = "AUTO REJOIN (OFF)";
+            
+            createBtn.style.background = "rgba(100,100,100,0.2)";
+            createBtn.style.color = "#aaa";
+            createBtn.textContent = "AUTO CREATE (OFF)";
+        }
+        
         if (!state.auto_nemesis_running) {
             stopNemesisWarpBtn.disabled = true;
         }
@@ -656,6 +686,27 @@ document.addEventListener("DOMContentLoaded", () => {
             }).then(r => r.json()).then(data => {
                 if (data.error) console.error(data.error);
             });
+        });
+    });
+    
+    // Auto PTA Mode Listeners
+    document.getElementById("pta-mode-rejoin-btn").addEventListener("click", () => {
+        let currentMode = state.pta_rejoin_mode;
+        let newMode = (currentMode === "REJOIN") ? "NONE" : "REJOIN";
+        fetch("/api/action", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({type: "set_pta_mode", mode: newMode})
+        });
+    });
+    
+    document.getElementById("pta-mode-create-btn").addEventListener("click", () => {
+        let currentMode = state.pta_rejoin_mode;
+        let newMode = (currentMode === "CREATE") ? "NONE" : "CREATE";
+        fetch("/api/action", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({type: "set_pta_mode", mode: newMode})
         });
     });
 

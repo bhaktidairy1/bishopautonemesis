@@ -248,7 +248,8 @@ def get_state():
         "island_list": getattr(state, "island_list", []),
         "is_island_mode": state.is_island_mode,
         "npc_talk_mode": getattr(state, "npc_talk_mode", False),
-        "disabled_buffs": list(getattr(state, "disabled_buffs", set()))
+        "disabled_buffs": list(getattr(state, "disabled_buffs", set())),
+        "pta_rejoin_mode": getattr(state, "pta_rejoin_mode", "NONE")
     })
 
 @app.route("/api/island/list", methods=["POST"])
@@ -661,6 +662,13 @@ def perform_action():
             pkt = "0003300601" if state.npc_talk_mode else "0003300600"
             hex_send(client.sock, pkt, label="NPC_TALK_TOGGLE")
         return jsonify({"success": True, "npc_talk_mode": state.npc_talk_mode})
+
+    elif action_type == "set_pta_mode":
+        mode = data.get("mode")
+        if mode in ["NONE", "REJOIN", "CREATE"]:
+            state.pta_rejoin_mode = mode
+            return jsonify({"success": True, "pta_rejoin_mode": mode})
+        return jsonify({"error": "Invalid mode"}), 400
 
     return jsonify({"error": "Unknown action"}), 400
 

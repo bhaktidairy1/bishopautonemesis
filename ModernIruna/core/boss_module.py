@@ -538,7 +538,7 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
                 if start_map_id == 44640:
                     print("[*] PT Area expired or map changed! Rejoining PT Area...")
                     from core.pt_area import auto_rejoin_pt_area_thread
-                    auto_rejoin_pt_area_thread(sock)
+                    auto_rejoin_pt_area_thread(sock, is_expired=True)
                     continue
                 else:
                     print(f"[*] Map changed unexpectedly. Warping back to {start_map_id}...")

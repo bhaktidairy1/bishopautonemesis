@@ -39,6 +39,11 @@ class GameState:
         self.party_members = {}
         self.pending_party_invite = None
         self.party_update_event = threading.Event()
+        
+        # PT Area Config
+        # "NONE" = do nothing, "REJOIN" = wait and rejoin, "CREATE" = wait and recreate
+        self.pta_rejoin_mode = "NONE"
+        self.pta_active = False
 
         # Scripting & Boss Automation
         self.in_scripted_sequence = False
