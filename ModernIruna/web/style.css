@@ -19,9 +19,6 @@ body {
     background-color: var(--bg-dark);
     min-height: 100vh;
     overflow-x: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 /* Atmospheric Background */
@@ -41,6 +38,7 @@ body {
 
 .container {
     width: 100%; max-width: 1200px;
+    margin: 0 auto;
     padding: 20px;
     position: relative;
     z-index: 10;
@@ -139,7 +137,7 @@ body {
 .tp-input-full::-webkit-outer-spin-button, .tp-input-half::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .tp-input-full, .tp-input-half { -moz-appearance: textfield; }
 
-.radar { height: 350px; display: flex; flex-direction: column; }
+.radar { display: flex; flex-direction: column; }
 .list-view { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px; }
 .list-view::-webkit-scrollbar { width: 6px; }
 .list-view::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
