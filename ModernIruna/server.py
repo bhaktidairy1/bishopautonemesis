@@ -249,7 +249,8 @@ def get_state():
         "is_island_mode": state.is_island_mode,
         "npc_talk_mode": getattr(state, "npc_talk_mode", False),
         "disabled_buffs": list(getattr(state, "disabled_buffs", set())),
-        "pta_rejoin_mode": getattr(state, "pta_rejoin_mode", "NONE")
+        "pta_rejoin_mode": getattr(state, "pta_rejoin_mode", "NONE"),
+        "pta_active": getattr(state, "pta_active", False)
     })
 
 @app.route("/api/island/list", methods=["POST"])

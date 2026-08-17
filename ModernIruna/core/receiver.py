@@ -556,6 +556,19 @@ def handle_island_list(payload: bytes):
     except Exception as e:
         print(f"[-] Error in handle_island_list: {e}")
 
+def handle_pta_status(payload: bytes):
+    """
+    Opcode 0xb502 — PT Area Status Response
+    """
+    try:
+        hex_data = binascii.hexlify(payload).decode()
+        if hex_data.startswith("0000000000000000"):
+            state.pta_active = False
+        else:
+            state.pta_active = True
+    except Exception as e:
+        pass
+
 # ════════════════════════════════════════════
 #  HANDLER REGISTRY
 # ════════════════════════════════════════════
@@ -578,6 +591,7 @@ HANDLERS = {
     0x0244: handle_entity_death,
     0x0246: handle_0246_skill_ready,
     0x0248: handle_0248_entity_def,
+    0xb502: handle_pta_status,
     OP_MAP_SYNC:        handle_map_sync_b503,
     OP_MAP_SYNC_B505:   handle_map_sync_b505,
     OP_MOB_SPAWN:       handle_mob_spawn,

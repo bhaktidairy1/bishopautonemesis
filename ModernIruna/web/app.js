@@ -629,6 +629,19 @@ document.addEventListener("DOMContentLoaded", () => {
             createBtn.textContent = "AUTO CREATE (OFF)";
         }
         
+        const ptaIndicator = document.getElementById("pta-active-indicator");
+        if (state.pta_active) {
+            ptaIndicator.textContent = "PTA: ACTIVE";
+            ptaIndicator.style.background = "rgba(0, 255, 100, 0.3)";
+            ptaIndicator.style.color = "#00ff64";
+            ptaIndicator.style.border = "1px solid #00ff64";
+        } else {
+            ptaIndicator.textContent = "PTA: INACTIVE";
+            ptaIndicator.style.background = "rgba(255, 50, 50, 0.3)";
+            ptaIndicator.style.color = "#ff3232";
+            ptaIndicator.style.border = "1px solid #ff3232";
+        }
+        
         if (!state.auto_nemesis_running) {
             stopNemesisWarpBtn.disabled = true;
         }

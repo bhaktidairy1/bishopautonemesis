@@ -508,6 +508,7 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
             "bless": 0
         }
         last_holy_spike_time = 0
+        last_pta_check_time = 0
         
         while state.auto_nemesis_running:
             # 0. Check Death
@@ -571,6 +572,11 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
             if now - last_buff_times["preire"] > 290: # 5 mins
                 cast_individual_buff(sock, "preire")
                 last_buff_times["preire"] = time.time()
+                
+            # 1.9 Check PTA Status Periodically (Every 15s) if we are in a PTA
+            if start_map_id == 44640 and now - last_pta_check_time > 15:
+                hex_send(sock, "0002b502", "PT_AREA_STATUS_CHECK")
+                last_pta_check_time = now
                 
             # 2. Find nearest mob
             nearest_uid = None
