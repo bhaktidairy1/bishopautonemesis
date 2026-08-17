@@ -120,7 +120,16 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
         print("[!] PTA Rejoin Mode is NONE. Aborting auto-rejoin.")
         return
         
-    print("[*] Waiting 65 seconds for server cool-down before taking PTA action...")
+    print("[*] Checking if PTA is actually expired or if this was just a glitch...")
+    hex_send(sock, "0002b502", "PT_AREA_STATUS_CHECK")
+    time.sleep(2.0)
+    
+    if getattr(state, 'pta_active', False):
+        print("[+] PTA is STILL ACTIVE! Rejoining immediately without waiting.")
+        join_pt_area(sock, base_map)
+        return
+        
+    print("[*] PTA is definitively INACTIVE. Waiting 65 seconds for server cool-down...")
     time.sleep(65.0)
     
     if mode == "REJOIN":
