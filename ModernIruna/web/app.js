@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let isConnected = false;
     let pollInterval = null;
+    let currentState = {};
     
     // Always poll logs so they show up on login screen too
     setInterval(fetchLogs, 500);
@@ -191,6 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch("/api/state")
         .then(r => r.json())
         .then(data => {
+            currentState = data;
             if(data.connected && !isConnected) {
                 transitionToDashboard(data.is_island_mode);
             }
@@ -704,7 +706,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Auto PTA Mode Listeners
     document.getElementById("pta-mode-rejoin-btn").addEventListener("click", () => {
-        let currentMode = state.pta_rejoin_mode;
+        let currentMode = currentState.pta_rejoin_mode;
         let newMode = (currentMode === "REJOIN") ? "NONE" : "REJOIN";
         fetch("/api/action", {
             method: "POST",
@@ -714,7 +716,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     
     document.getElementById("pta-mode-create-btn").addEventListener("click", () => {
-        let currentMode = state.pta_rejoin_mode;
+        let currentMode = currentState.pta_rejoin_mode;
         let newMode = (currentMode === "CREATE") ? "NONE" : "CREATE";
         fetch("/api/action", {
             method: "POST",
