@@ -606,7 +606,7 @@ document.addEventListener("DOMContentLoaded", () => {
         healBtn.disabled = false;
         sellBtn.disabled = false;
         
-        // Sync Buff Toggles
+        // Sync Buff Toggles & Levels
         document.querySelectorAll(".toggle-buff-btn").forEach(btn => {
             const buffId = btn.dataset.buff;
             if (state.disabled_buffs && state.disabled_buffs.includes(buffId)) {
@@ -621,6 +621,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 btn.style.color = "#00ff64";
             }
         });
+        
+        document.querySelectorAll(".buff-level-select").forEach(select => {
+            const buffId = select.dataset.buff;
+            if (state.buff_levels && state.buff_levels[buffId]) {
+                select.value = state.buff_levels[buffId];
+            }
+        });
     }
 
     // Toggle Buff Listeners
@@ -631,6 +638,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({type: "toggle_buff", buff_id: buffId})
+            }).then(r => r.json()).then(data => {
+                if (data.error) console.error(data.error);
+            });
+        });
+    });
+    
+    // Level Select Listeners
+    document.querySelectorAll(".buff-level-select").forEach(select => {
+        select.addEventListener("change", (e) => {
+            const buffId = e.target.dataset.buff;
+            const levelHex = e.target.value;
+            fetch("/api/action", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({type: "set_buff_level", buff_id: buffId, level_hex: levelHex})
             }).then(r => r.json()).then(data => {
                 if (data.error) console.error(data.error);
             });

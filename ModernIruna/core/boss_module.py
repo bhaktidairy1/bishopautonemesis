@@ -421,13 +421,14 @@ def cast_bishop_buffs(sock):
         ("bless", "1b79", "0002", "Bless"),
     ]
     
-    for buff_id, skill_hex, flag, name in buffs:
+    for buff_id, skill_hex, default_flag, name in buffs:
         if buff_id in state.disabled_buffs:
             print(f"[*] Skipping {name} (Disabled by user)")
             continue
             
         state.skill_cast_event.clear()
         
+        flag = state.buff_levels.get(buff_id, default_flag)
         cast_pkt = f"000a0143{skill_hex}{flag}{state.char_id_hex}"
         hex_send(sock, cast_pkt, f"{name} CAST")
         
@@ -459,10 +460,11 @@ def cast_individual_buff(sock, buff_id):
         print(f"[*] Skipping {buffs[buff_id][2]} (Disabled by user)")
         return
         
-    skill_hex, flag, name = buffs[buff_id]
+    skill_hex, default_flag, name = buffs[buff_id]
     print(f"[*] Casting {name}...")
     state.skill_cast_event.clear()
     
+    flag = state.buff_levels.get(buff_id, default_flag)
     cast_pkt = f"000a0143{skill_hex}{flag}{state.char_id_hex}"
     hex_send(sock, cast_pkt, f"{name} CAST")
     

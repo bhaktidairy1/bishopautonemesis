@@ -54,6 +54,14 @@ class GameState:
         # Disabled Skills/Buffs
         self.disabled_buffs = set()
         
+        # Skill Levels (Overrides the default '0001', '0002', etc flags if set)
+        self.buff_levels = {
+            "revelation": "0001",
+            "risparmio": "0002",
+            "preire": "0003",
+            "bless": "0002"
+        }
+        
         # Island Mode
         self.is_island_mode = False
         self.in_island_map = False

@@ -645,6 +645,15 @@ def perform_action():
             
         return jsonify({"success": True, "buff_id": buff_id, "enabled": enabled})
         
+    elif action_type == "set_buff_level":
+        buff_id = data.get("buff_id")
+        level_hex = data.get("level_hex")
+        if not buff_id or not level_hex:
+            return jsonify({"error": "Missing buff_id or level_hex"}), 400
+            
+        state.buff_levels[buff_id] = level_hex
+        return jsonify({"success": True, "buff_id": buff_id, "level_hex": level_hex})
+        
     elif action_type == "toggle_npc_talk":
         state.npc_talk_mode = not getattr(state, "npc_talk_mode", False)
         if client.sock:
