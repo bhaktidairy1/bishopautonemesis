@@ -664,6 +664,16 @@ def perform_action():
             hex_send(client.sock, pkt, label="NPC_TALK_TOGGLE")
         return jsonify({"success": True, "npc_talk_mode": state.npc_talk_mode})
 
+    elif action_type == "cast_individual_buff":
+        buff_id = data.get("buff_id")
+        if not buff_id:
+            return jsonify({"error": "Missing buff_id"}), 400
+        if client.sock:
+            from core.boss_module import cast_individual_buff
+            threading.Thread(target=cast_individual_buff, args=(client.sock, buff_id), daemon=True).start()
+            return jsonify({"success": True, "buff_id": buff_id})
+        return jsonify({"error": "No active socket"}), 400
+
     elif action_type == "set_pta_mode":
         mode = data.get("mode")
         if mode in ["NONE", "REJOIN", "CREATE"]:

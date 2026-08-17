@@ -725,6 +725,29 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // Individual Cast Buff Buttons
+    const castIndividualBuff = (buffId) => {
+        fetch("/api/action", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({type: "cast_individual_buff", buff_id: buffId})
+        }).then(r => r.json()).then(data => {
+            if (data.error) console.error(data.error);
+        });
+    };
+    
+    const revBtn = document.getElementById("buff-rev-btn");
+    if (revBtn) revBtn.addEventListener("click", () => castIndividualBuff("revelation"));
+    
+    const rispBtn = document.getElementById("buff-risp-btn");
+    if (rispBtn) rispBtn.addEventListener("click", () => castIndividualBuff("risparmio"));
+    
+    const preBtn = document.getElementById("buff-pre-btn");
+    if (preBtn) preBtn.addEventListener("click", () => castIndividualBuff("preire"));
+    
+    const blessBtn = document.getElementById("buff-bless-btn");
+    if (blessBtn) blessBtn.addEventListener("click", () => castIndividualBuff("bless"));
+
     let radarCanvas = document.getElementById("radar-canvas");
     let radarCtx = radarCanvas.getContext("2d");
     let selectedRadarTarget = null;
