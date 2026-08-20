@@ -355,51 +355,61 @@ def auto_zimov_loop(sock):
     print("==================================================")
     
     try:
+        consecutive_kills = 0
         while state.auto_zimov_running:
             player_died = False
-            for i in range(7):
-                if not state.auto_zimov_running:
-                    break
+            
+            # Check if we should heal/sell
+            needs_heal = False
+            player_mp = getattr(state, "player_mp", 9999) # Default high so we don't heal if unknown
+            
+            if player_mp < 1000:
+                print(f"[*] MP is low ({player_mp}). Need to heal!")
+                needs_heal = True
+            elif consecutive_kills >= 7:
+                print(f"[*] Reached {consecutive_kills} kills since last heal. Need to heal!")
+                needs_heal = True
+                
+            if needs_heal:
+                bag_usage = calculate_bag_usage()
+                
+                # Find Zimov Tail count (Item ID: 0x28BE)
+                tail_count = 0
+                for item in state.inventory.values():
+                    if item["id"] == 0x28be:
+                        tail_count = item["count"]
+                        break
+                        
+                print(f"\n[*] Auto-Zimov: Checking Bag Space (Tails: {tail_count}, {bag_usage}/50 slots used)")
+                
+                if tail_count >= 2500:
+                    print(f"[*] Reached {tail_count} Zimov Tails! Initiating Auto-Sell...")
+                    kakeula_sell_thread(sock, return_x=67, return_y=82)
+                else:
+                    print("[*] Auto-Zimov: Healing at Kakeula...")
+                    kakeula_heal_thread(sock, return_x=67, return_y=82)
                     
-                print(f"\n[*] Auto-Zimov: Kill {i+1}/7")
-                
-                # Run the battle sequence synchronously
-                zimov_battle_thread(sock)
-                state.auto_zimov_kill_count += 1
-                
-                # Small pause to ensure map fully registers before next iteration
+                consecutive_kills = 0
+                state.auto_zimov_run_count += 1
                 time.sleep(1.5)
+                continue
                 
-                if state.current_map_hex != "3e1c" or getattr(state, "is_reviving", False):
-                    print("[!] Player is not in Dierolt (likely died). Breaking Zimov kill loop.")
-                    player_died = True
-                    break
+            print(f"\n[*] Auto-Zimov: Kill {consecutive_kills+1} (Since last heal)")
             
-            if not state.auto_zimov_running:
-                break
-                
-            bag_usage = calculate_bag_usage()
+            # Run the battle sequence synchronously
+            zimov_battle_thread(sock)
+            state.auto_zimov_kill_count += 1
+            consecutive_kills += 1
             
-            # Find Zimov Tail count (Item ID: 0x28BE)
-            tail_count = 0
-            for item in state.inventory.values():
-                if item["id"] == 0x28be:
-                    tail_count = item["count"]
-                    break
-                    
-            print(f"\n[*] Auto-Zimov: Checking Bag Space (Tails: {tail_count}, {bag_usage}/50 slots used)")
-            
-            if tail_count >= 2500:
-                print(f"[*] Reached {tail_count} Zimov Tails! Initiating Auto-Sell...")
-                kakeula_sell_thread(sock, return_x=67, return_y=82)
-            else:
-                print("[*] Auto-Zimov: Healing at Kakeula...")
-                kakeula_heal_thread(sock, return_x=67, return_y=82)
-                
-            state.auto_zimov_run_count += 1
-            
-            # Wait for heal sequence to complete and return to Dierolt
+            # Small pause to ensure map fully registers before next iteration
             time.sleep(1.5)
+            
+            if state.current_map_hex != "3e1c" or getattr(state, "is_reviving", False):
+                print("[!] Player is not in Dierolt (likely died). Breaking Zimov kill loop.")
+                player_died = True
+                # Force heal and return warp on next iteration
+                consecutive_kills = 7 
+                continue
             
     except Exception as e:
         print(f"[-] Auto-Zimov Loop Error: {e}")
