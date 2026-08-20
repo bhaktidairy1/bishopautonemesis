@@ -356,6 +356,7 @@ def auto_zimov_loop(sock):
     
     try:
         while state.auto_zimov_running:
+            player_died = False
             for i in range(7):
                 if not state.auto_zimov_running:
                     break
@@ -371,6 +372,7 @@ def auto_zimov_loop(sock):
                 
                 if state.current_map_hex != "3e1c" or getattr(state, "is_reviving", False):
                     print("[!] Player is not in Dierolt (likely died). Breaking Zimov kill loop.")
+                    player_died = True
                     break
             
             if not state.auto_zimov_running:
@@ -389,10 +391,10 @@ def auto_zimov_loop(sock):
             
             if tail_count >= 2500:
                 print(f"[*] Reached {tail_count} Zimov Tails! Initiating Auto-Sell...")
-                kakeula_sell_thread(sock)
+                kakeula_sell_thread(sock, return_x=67, return_y=82)
             else:
                 print("[*] Auto-Zimov: Healing at Kakeula...")
-                kakeula_heal_thread(sock)
+                kakeula_heal_thread(sock, return_x=67, return_y=82)
                 
             state.auto_zimov_run_count += 1
             
