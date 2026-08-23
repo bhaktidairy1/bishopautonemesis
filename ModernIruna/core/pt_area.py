@@ -134,6 +134,8 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
     time.sleep(65.0)
     
     if mode == "REJOIN":
+        print("[*] Waiting an extra 8 seconds to allow the host to CREATE the PT Area first...")
+        time.sleep(8.0)
         print("[*] Attempting to REJOIN existing PT Area...")
         join_pt_area(sock, base_map)
     elif mode == "CREATE":
