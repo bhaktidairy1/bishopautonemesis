@@ -7,7 +7,7 @@ from core.map_teleport import teleport
 
 def create_and_enter_pt_area(sock, map_hex=None):
     if not map_hex:
-        map_hex = getattr(state, 'current_map_hex', '00030d42')
+        map_hex = getattr(state, 'pt_area_base_map_hex', getattr(state, 'current_map_hex', '000086bc'))
     if len(map_hex) < 8: map_hex = map_hex.zfill(8)
     
     print(f"[*] Initiating PT Area Sequence for Map {map_hex}...")
@@ -47,8 +47,9 @@ def create_and_enter_pt_area(sock, map_hex=None):
 
 def join_pt_area(sock, map_hex=None):
     if not map_hex:
-        # Default to whatever the last known base map was, or Miscerene Plains if unknown
-        map_hex = getattr(state, 'pt_area_base_map_hex', '00030d42')
+        # Default to whatever map the user was currently tracking in state, or fallback to current map
+        map_hex = getattr(state, 'pt_area_base_map_hex', getattr(state, 'current_map_hex', '000086bc'))
+        
     if len(map_hex) < 8: map_hex = map_hex.zfill(8)
     
     print(f"[*] Initiating PT Area Join Sequence for Map {map_hex}...")
@@ -103,7 +104,7 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
     Called when the PT Area expires or map changes.
     Rejoins the existing PT area or creates a new one depending on state.pta_rejoin_mode.
     """
-    base_map = getattr(state, 'pt_area_base_map_hex', '00030d42')
+    base_map = getattr(state, 'pt_area_base_map_hex', '000086bc')
     
     if not is_expired:
         print("[*] Rejoining PT Area automatically (not expired)...")
@@ -139,6 +140,6 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
         print("[*] Attempting to CREATE new PT Area...")
         from core.map_teleport import teleport
         print(f"[*] Teleporting to base map {base_map} before creating PT Area...")
-        teleport(sock, int(base_map, 16), 108, 180)
+        teleport(sock, int(base_map, 16), 120, 120)
         time.sleep(2.0)
         create_and_enter_pt_area(sock, base_map)
