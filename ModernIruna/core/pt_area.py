@@ -191,22 +191,38 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
 
 def start_proactive_pta_timer(sock):
     """
-    Starts a 59-minute proactive timer in the background.
+    Starts a proactive timer in the background using the server's reported time.
     """
-    # If a timer is already running, don't start a new one. The existing one will naturally continue.
+    # If a timer is already running, don't start a new one.
     if getattr(state, 'pta_timer_running', False):
         print("[*] Proactive PT Area timer already running. Not starting a duplicate.")
         return
         
     def _timer_thread():
         state.pta_timer_running = True
-        print("[*] Proactive PT Area 59-minute timer STARTED.")
         
-        for i in range(3540, 0, -10): # 59 minutes = 3540 seconds
-            # Wait exactly 59 mins regardless of UI toggles. If they manually left, the timer keeps ticking as requested.
-            time.sleep(10)
+        # Give the b502 packet a moment to be parsed by receiver.py
+        time.sleep(2.0)
+        
+        # Default to 59 minutes if no exact time is known yet
+        remaining_secs = getattr(state, 'pta_time_remaining', 3540)
+        
+        # Proactively leave 60 seconds before server expiration
+        sleep_time = remaining_secs - 60
+        
+        if sleep_time <= 0:
+            print("[!] PT Area is about to expire right now! Initiating reset immediately.")
+            sleep_time = 0
+        else:
+            mins = int(sleep_time // 60)
+            secs = int(sleep_time % 60)
+            print(f"[*] Proactive PT Area timer STARTED. Sleeping for {mins}m {secs}s (until 1 min before server expiry).")
+        
+        for i in range(int(sleep_time), 0, -10):
+            sleep_chunk = min(i, 10)
+            time.sleep(sleep_chunk)
             
-        print("[!] 59-minute PT Area timer EXPIRED! Initiating proactive reset sequence...")
+        print("[!] Proactive PT Area timer EXPIRED (1 min before server)! Initiating proactive reset sequence...")
         state.pta_timer_running = False
         
         mode = getattr(state, 'pta_rejoin_mode', 'NONE')

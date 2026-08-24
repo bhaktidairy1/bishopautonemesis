@@ -561,13 +561,22 @@ def handle_pta_status(payload: bytes):
     Opcode 0xb502 — PT Area Status Response
     """
     try:
+        import binascii
         hex_data = binascii.hexlify(payload).decode()
         if hex_data.startswith("0000000000000000"):
             state.pta_active = False
+            state.pta_time_remaining = 0
+            print("[-] PT Area Status: INACTIVE")
         else:
             state.pta_active = True
+            time_remaining_ds = int(hex_data[8:16], 16)
+            state.pta_time_remaining = time_remaining_ds / 10.0
+            
+            mins = int(state.pta_time_remaining // 60)
+            secs = int(state.pta_time_remaining % 60)
+            print(f"[+] PT Area Status: ACTIVE | Time remaining: {mins}m {secs}s")
     except Exception as e:
-        pass
+        print(f"[-] Error parsing PTA status: {e}")
 
 # ════════════════════════════════════════════
 #  HANDLER REGISTRY
