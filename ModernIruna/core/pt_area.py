@@ -113,7 +113,7 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
             print("[!] Failed to rejoin PT Area.")
         return
 
-    print(f"[*] Map changed unexpectedly (PTA Expired). PTA Mode: {getattr(state, 'pta_rejoin_mode', 'NONE')}")
+    print(f"[*] PTA Reset Sequence Triggered. PTA Mode: {getattr(state, 'pta_rejoin_mode', 'NONE')}")
     
     mode = getattr(state, 'pta_rejoin_mode', 'NONE')
     
@@ -121,25 +121,15 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
         print("[!] PTA Rejoin Mode is NONE. Aborting auto-rejoin.")
         return
         
-    print("[*] Checking if PTA is actually expired or if this was just a glitch...")
-    hex_send(sock, "0002b502", "PT_AREA_STATUS_CHECK")
-    time.sleep(2.0)
-    
-    if getattr(state, 'pta_active', False):
-        print("[+] PTA is STILL ACTIVE! Rejoining immediately without waiting.")
-        join_pt_area(sock, base_map)
-        return
-        
-    print("[*] PTA is definitively INACTIVE.")
     from core.map_teleport import teleport
     
     if mode == "CREATE":
         print("[*] CREATE MODE: Moving to safe town (Kakeula 25100) to wait out server cooldown...")
         teleport(sock, 25100, 87, 92)
         
-        # Wait 3.5 minutes (210 seconds)
-        print("[*] Waiting 210 seconds (3.5 minutes) before recreating PT Area...")
-        for i in range(210, 0, -10):
+        # Wait 5 minutes (300 seconds)
+        print("[*] Waiting 300 seconds (5 minutes) before recreating PT Area...")
+        for i in range(300, 0, -10):
             if getattr(state, 'pta_rejoin_mode', 'NONE') != "CREATE":
                 print("[!] PTA mode changed. Aborting wait.")
                 return
@@ -151,11 +141,23 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
         teleport(sock, int(base_map, 16), 120, 120)
         time.sleep(2.0)
         create_and_enter_pt_area(sock, base_map)
+        start_proactive_pta_timer(sock)
         
     elif mode == "REJOIN":
-        print("[*] REJOIN MODE: Waiting for host to recreate the PT Area...")
-        print("[*] Polling server every 10 seconds until active.")
+        print("[*] REJOIN MODE: Moving to safe town (Kakeula 25100) while waiting for old PTA to expire...")
+        teleport(sock, 25100, 87, 92)
         
+        # Wait 5 minutes (300 seconds) to ensure the old instance is completely gone
+        print("[*] Waiting 300 seconds (5 minutes) before polling for new PT Area...")
+        for i in range(300, 0, -10):
+            if getattr(state, 'pta_rejoin_mode', 'NONE') != "REJOIN":
+                print("[!] PTA mode changed. Aborting wait.")
+                return
+            if i % 30 == 0:
+                print(f"[*] Waiting... {i} seconds left before polling.")
+            time.sleep(10)
+        
+        print("[*] REJOIN MODE: Polling server every 10 seconds until new PT area is active.")
         timeout = 360 # 6 minutes max wait
         elapsed = 0
         while elapsed < timeout:
@@ -170,6 +172,7 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
                 print("[+] PT Area is now ACTIVE! Rejoining...")
                 time.sleep(3.0) # Give host an extra 3 seconds to fully enter
                 join_pt_area(sock, base_map)
+                start_proactive_pta_timer(sock)
                 return
                 
             if elapsed % 30 == 0:
@@ -178,3 +181,32 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
             elapsed += 10
             
         print("[-] Timed out waiting for host to create PT Area after 6 minutes.")
+
+def start_proactive_pta_timer(sock):
+    """
+    Starts a 59-minute proactive timer in the background.
+    """
+    # If a timer is already running, don't start a new one. The existing one will naturally continue.
+    if getattr(state, 'pta_timer_running', False):
+        print("[*] Proactive PT Area timer already running. Not starting a duplicate.")
+        return
+        
+    def _timer_thread():
+        state.pta_timer_running = True
+        print("[*] Proactive PT Area 59-minute timer STARTED.")
+        
+        for i in range(3540, 0, -10): # 59 minutes = 3540 seconds
+            # Wait exactly 59 mins regardless of UI toggles. If they manually left, the timer keeps ticking as requested.
+            time.sleep(10)
+            
+        print("[!] 59-minute PT Area timer EXPIRED! Initiating proactive reset sequence...")
+        state.pta_timer_running = False
+        
+        mode = getattr(state, 'pta_rejoin_mode', 'NONE')
+        if mode == "NONE":
+            print("[*] Auto-PTA mode disabled. Ignoring proactive reset.")
+            return
+            
+        auto_rejoin_pt_area_thread(sock, is_expired=True)
+        
+    threading.Thread(target=_timer_thread, daemon=True).start()

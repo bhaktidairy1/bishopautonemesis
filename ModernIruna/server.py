@@ -475,8 +475,9 @@ def perform_action():
                 if len(map_hex) < 8: map_hex = map_hex.zfill(8)
                 state.pt_area_base_map_hex = map_hex
                 
-                from core.pt_area import join_pt_area
+                from core.pt_area import join_pt_area, start_proactive_pta_timer
                 join_pt_area(client.sock, map_hex)
+                start_proactive_pta_timer(client.sock)
                 
             except Exception as e:
                 print(f"[!] PT Area join error: {e}")
@@ -499,8 +500,9 @@ def perform_action():
                 if len(map_hex) < 8: map_hex = map_hex.zfill(8)
                 state.pt_area_base_map_hex = map_hex
                 
-                from core.pt_area import create_and_enter_pt_area
+                from core.pt_area import create_and_enter_pt_area, start_proactive_pta_timer
                 create_and_enter_pt_area(client.sock, map_hex)
+                start_proactive_pta_timer(client.sock)
             except Exception as e:
                 print(f"[!] PT Area error: {e}")
                 
