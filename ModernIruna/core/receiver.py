@@ -570,7 +570,9 @@ def handle_pta_status(payload: bytes):
         else:
             state.pta_active = True
             time_remaining_ds = int(hex_data[8:16], 16)
+            import time
             state.pta_time_remaining = time_remaining_ds / 10.0
+            state.pta_time_last_updated = time.time()
             
             mins = int(state.pta_time_remaining // 60)
             secs = int(state.pta_time_remaining % 60)
