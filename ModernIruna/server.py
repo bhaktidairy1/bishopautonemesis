@@ -470,8 +470,8 @@ def perform_action():
             
         def _join_pt_area():
             try:
-                # Default to Baum Map (34500)
-                map_hex = getattr(state, 'pt_area_base_map_hex', '000086bc')
+                # Default to Baum Map (34500 = 0x86c4)
+                map_hex = getattr(state, 'pt_area_base_map_hex', '000086c4')
                 if len(map_hex) < 8: map_hex = map_hex.zfill(8)
                 state.pt_area_base_map_hex = map_hex
                 
@@ -504,8 +504,8 @@ def perform_action():
         
         def _create_and_enter_pt_area():
             try:
-                # Default to Baum Map (34500)
-                map_hex = getattr(state, 'pt_area_base_map_hex', '000086bc')
+                # Default to Baum Map (34500 = 0x86c4)
+                map_hex = getattr(state, 'pt_area_base_map_hex', '000086c4')
                 if len(map_hex) < 8: map_hex = map_hex.zfill(8)
                 state.pt_area_base_map_hex = map_hex
                 
