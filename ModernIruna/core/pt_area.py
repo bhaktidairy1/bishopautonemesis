@@ -130,18 +130,51 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
         join_pt_area(sock, base_map)
         return
         
-    print("[*] PTA is definitively INACTIVE. Waiting 65 seconds for server cool-down...")
-    time.sleep(65.0)
+    print("[*] PTA is definitively INACTIVE.")
+    from core.map_teleport import teleport
     
-    if mode == "REJOIN":
-        print("[*] Waiting an extra 8 seconds to allow the host to CREATE the PT Area first...")
-        time.sleep(8.0)
-        print("[*] Attempting to REJOIN existing PT Area...")
-        join_pt_area(sock, base_map)
-    elif mode == "CREATE":
-        print("[*] Attempting to CREATE new PT Area...")
-        from core.map_teleport import teleport
-        print(f"[*] Teleporting to base map {base_map} before creating PT Area...")
+    if mode == "CREATE":
+        print("[*] CREATE MODE: Moving to safe town (Kakeula 25100) to wait out server cooldown...")
+        teleport(sock, 25100, 87, 92)
+        
+        # Wait 3.5 minutes (210 seconds)
+        print("[*] Waiting 210 seconds (3.5 minutes) before recreating PT Area...")
+        for i in range(210, 0, -10):
+            if getattr(state, 'pta_rejoin_mode', 'NONE') != "CREATE":
+                print("[!] PTA mode changed. Aborting wait.")
+                return
+            if i % 30 == 0:
+                print(f"[*] Waiting... {i} seconds left before creation.")
+            time.sleep(10)
+            
+        print(f"[*] Cooldown complete. Teleporting to base map {base_map}...")
         teleport(sock, int(base_map, 16), 120, 120)
         time.sleep(2.0)
         create_and_enter_pt_area(sock, base_map)
+        
+    elif mode == "REJOIN":
+        print("[*] REJOIN MODE: Waiting for host to recreate the PT Area...")
+        print("[*] Polling server every 10 seconds until active.")
+        
+        timeout = 360 # 6 minutes max wait
+        elapsed = 0
+        while elapsed < timeout:
+            if getattr(state, 'pta_rejoin_mode', 'NONE') != "REJOIN":
+                print("[!] PTA mode changed. Aborting rejoin.")
+                return
+                
+            hex_send(sock, "0002b502", "PT_AREA_STATUS_CHECK")
+            time.sleep(2.0)
+            
+            if getattr(state, 'pta_active', False):
+                print("[+] PT Area is now ACTIVE! Rejoining...")
+                time.sleep(3.0) # Give host an extra 3 seconds to fully enter
+                join_pt_area(sock, base_map)
+                return
+                
+            if elapsed % 30 == 0:
+                print(f"[*] Still waiting for host to create PTA... (Waited {elapsed+2}s)")
+            time.sleep(8.0)
+            elapsed += 10
+            
+        print("[-] Timed out waiting for host to create PT Area after 6 minutes.")

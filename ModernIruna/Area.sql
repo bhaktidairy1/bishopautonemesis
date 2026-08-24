@@ -1050,7 +1050,7 @@ INSERT INTO `Area` VALUES (34300,'Sateria City','サテリア府街','34300.bmp'
 INSERT INTO `Area` VALUES (34360,'サテリア府街','サテリア府街','34300.bmp',2,34300,'');
 INSERT INTO `Area` VALUES (34400,'Sateria City','サテリア府街/大統領府','34400.bmp',1,0,'sc_34400.bin');
 INSERT INTO `Area` VALUES (34460,'サテリア府街・大統領府SF0','サテリア府街・大統領府SF0','34400.bmp',2,34400,'');
-INSERT INTO `Area` VALUES (34500,'000 Rocky Area','キルフ石化地帯','34500.bmp',1,0,'sc_34500.bin');
+INSERT INTO `Area` VALUES (34500,'Kilf Rocky Area','キルフ石化地帯','34500.bmp',1,0,'sc_34500.bin');
 INSERT INTO `Area` VALUES (34560,'キルフ石化地帯・SF','キルフ石化地帯・SF','34500.bmp',2,34500,'');
 INSERT INTO `Area` VALUES (34600,'Bestie Mountain','ベスティエ山ベース','34600.bmp',1,0,'sc_34600.bin');
 INSERT INTO `Area` VALUES (34601,'ベスティエ山・エリア１','ベスティエ山・エリア１','34601.bmp',1,0,'sc_34600.bin');
