@@ -29,6 +29,10 @@ def create_and_enter_pt_area(sock, map_hex=None):
         print("[!] Timeout waiting for PT Area Map Sync OK.")
     time.sleep(0.1)
     
+    if state.current_map_hex != "ae60":
+        print("[-] Server rejected PT Area entry! You are likely on a server cooldown.")
+        return False
+        
     hex_send(sock, "0002b501", "PT_AREA_1")
     time.sleep(0.2)
     hex_send(sock, "0002013a", "MAP_SYNC_ACK")
@@ -72,11 +76,14 @@ def join_pt_area(sock, map_hex=None):
     print("    [!] Waiting for Map Sync OK (b503)...")
     if not state.map_ready_event.wait(timeout=10.0):
         print("[!] Timeout waiting for PT Area Map Sync OK. Instance may have expired.")
-        return False
-    
+        # We don't return False here, because the check below is more reliable
     time.sleep(0.1)
     
-    # 4. Handshake 1
+    if state.current_map_hex != "ae60":
+        print("[-] Server rejected PT Area entry! The host may not have created it yet.")
+        return False
+        
+    # 4. Map Sync 1
     hex_send(sock, "0002b501", "PT_AREA_1")
     time.sleep(0.2)
     
