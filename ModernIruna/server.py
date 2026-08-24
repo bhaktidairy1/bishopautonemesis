@@ -484,6 +484,15 @@ def perform_action():
                 
         threading.Thread(target=_join_pt_area, daemon=True).start()
         return jsonify({"success": True})
+        
+    elif action_type == "check_pt_area":
+        if not client.sock:
+            return jsonify({"error": "Not connected"}), 400
+            
+        from core.packet_helpers import hex_send
+        print("[*] Manual PTA Check Triggered")
+        hex_send(client.sock, "0002b502", "PT_AREA_STATUS_CHECK")
+        return jsonify({"success": True})
 
     elif action_type == "create_pt_area":
         if not client.sock:

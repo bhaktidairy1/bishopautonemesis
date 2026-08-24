@@ -436,6 +436,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }).catch(e => console.error(e));
     });
 
+    document.getElementById("check-pt-area-btn").addEventListener("click", () => {
+        fetch("/api/action", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "check_pt_area" })
+        }).then(r => r.json()).then(data => {
+            if (data.error) console.error(data.error);
+            else console.log("PT Area status check sent");
+        }).catch(e => console.error(e));
+    });
+
     document.getElementById("join-pt-area-btn").addEventListener("click", () => {
         fetch("/api/action", {
             method: "POST",
