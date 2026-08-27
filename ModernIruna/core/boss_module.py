@@ -677,8 +677,10 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
             # Wait for Server to confirm cast started (014300) or rejected (0143ff)
             if not state.skill_cast_confirm_event.wait(timeout=2.0):
                 print("[-] Nemesis Cast Timeout! Server didn't confirm cast.")
-                time.sleep(0.5)
-                continue
+                print("[CRITICAL] Cast timeout detected. Logging to Discord and disconnecting for safety.")
+                upload_to_discord()
+                sock.close()
+                break
                 
             if getattr(state, "skill_failed", False):
                 state.nemesis_fail_count += 1
@@ -698,8 +700,10 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
             # Wait for Server to confirm damage execution (0142) or rejected (0141ff)
             if not state.skill_exec_confirm_event.wait(timeout=2.0):
                 print("[-] Nemesis Execute Timeout! Server didn't confirm damage.")
-                time.sleep(0.5)
-                continue
+                print("[CRITICAL] Execute timeout detected. Logging to Discord and disconnecting for safety.")
+                upload_to_discord()
+                sock.close()
+                break
                 
             if getattr(state, "skill_failed", False):
                 state.nemesis_fail_count += 1
