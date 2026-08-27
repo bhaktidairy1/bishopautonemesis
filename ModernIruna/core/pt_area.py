@@ -144,6 +144,16 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
                 print(f"[*] Waiting... {i} seconds left before creation.")
             time.sleep(10)
             
+        print("[*] Validating that no active PTA currently exists before recreating...")
+        hex_send(sock, "0002b502", "PT_AREA_STATUS_CHECK")
+        time.sleep(2.0)
+        
+        if getattr(state, 'pta_active', False):
+            print("[!] A PT Area is already ACTIVE (timer desync). Aborting duplicate creation.")
+            # We don't want to restart the timer manually here; the receiver loop handles updating 
+            # the time remaining and the background loop will naturally pick it up since we didn't crash.
+            return
+            
         print(f"[*] Cooldown complete. Teleporting to base map {base_map}...")
         teleport(sock, int(base_map, 16), 120, 120)
         time.sleep(2.0)
