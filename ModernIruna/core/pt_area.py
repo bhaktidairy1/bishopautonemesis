@@ -120,6 +120,17 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
             print("[!] Failed to rejoin PT Area.")
         return
 
+    if getattr(state, 'pta_resetting', False):
+        print("[*] PTA reset sequence already in progress. Ignoring duplicate trigger.")
+        return
+        
+    state.pta_resetting = True
+    try:
+        _auto_rejoin_pt_area_thread_internal(sock, base_map)
+    finally:
+        state.pta_resetting = False
+
+def _auto_rejoin_pt_area_thread_internal(sock, base_map):
     print(f"[*] PTA Reset Sequence Triggered. PTA Mode: {getattr(state, 'pta_rejoin_mode', 'NONE')}")
     
     mode = getattr(state, 'pta_rejoin_mode', 'NONE')
@@ -150,8 +161,9 @@ def auto_rejoin_pt_area_thread(sock, is_expired=False):
         
         if getattr(state, 'pta_active', False):
             print("[!] A PT Area is already ACTIVE (timer desync). Aborting duplicate creation.")
-            # We don't want to restart the timer manually here; the receiver loop handles updating 
-            # the time remaining and the background loop will naturally pick it up since we didn't crash.
+            print("[*] Rejoining the active PT Area instead.")
+            join_pt_area(sock, base_map)
+            start_proactive_pta_timer(sock)
             return
             
         print(f"[*] Cooldown complete. Teleporting to base map {base_map}...")

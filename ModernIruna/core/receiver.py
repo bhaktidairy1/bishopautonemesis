@@ -77,7 +77,7 @@ def _handle_map_sync_internal(payload: bytes, success: bool):
             from core.pt_area import auto_rejoin_pt_area_thread
             from core.client import client
             import threading
-            threading.Thread(target=auto_rejoin_pt_area_thread, args=(client.sock,), daemon=True).start()
+            threading.Thread(target=auto_rejoin_pt_area_thread, args=(client.sock, True), daemon=True).start()
             
     except Exception as e:
         print(f"[!] Sync Parse Error: {e}")
