@@ -73,7 +73,17 @@ def upload_to_discord(force=False):
     if "--minimal" not in sys.argv and not force:
         return
         
-    webhook_url = "https://discord.com/api/webhooks/1520498468655730788/z6GwrwKJbCWSFPoDn2V1hlskBygnrX-E6Ijw1szMmckieJiriKqNb6R8nV0fJ5TWv4po"
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+        
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
+    if not webhook_url:
+        print("[-] Discord upload failed: DISCORD_WEBHOOK_URL not set in .env or environment.")
+        return
+        
     filepath = get_current_log_filepath()
     if not filepath or not os.path.exists(filepath):
         print("[-] Discord upload failed: No active log file found.")
