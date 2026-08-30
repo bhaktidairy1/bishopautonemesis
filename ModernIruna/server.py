@@ -15,7 +15,8 @@ load_mob_db()
 
 # Parse arguments
 parser = argparse.ArgumentParser(description="Iruna Server")
-parser.add_argument("--minimal", action="store_true", help="Run the server with the minimal web UI")
+parser.add_argument("--minimal", action="store_true", help="Run the server with the minimal web UI (Auto-Zimov)")
+parser.add_argument("--minimalcerbera", action="store_true", help="Run the server with the minimal web UI (Auto-Cerbera)")
 parser.add_argument("--url", type=str, help="Launch URL to auto-connect and auto-start")
 parser.add_argument("--nolog", action="store_true", help="Disable packet logging to disk")
 args = parser.parse_args()
@@ -117,16 +118,21 @@ if args.url:
             # Short buffer to ensure environment is stabilized
             time.sleep(2)
             
-            print("[*] World loaded. Starting Auto-Zimov loop!")
-            from core.boss_module import auto_zimov_loop
-            # Start the loop in this thread
-            auto_zimov_loop(client.sock)
+            if args.minimalcerbera:
+                print("[*] World loaded. Starting Auto-Cerbera loop!")
+                from core.boss_module import auto_cerbera_loop
+                auto_cerbera_loop(client.sock)
+            else:
+                print("[*] World loaded. Starting Auto-Zimov loop!")
+                from core.boss_module import auto_zimov_loop
+                # Start the loop in this thread
+                auto_zimov_loop(client.sock)
             
     threading.Thread(target=auto_connect_loop, daemon=True).start()
 
 @app.route("/")
 def index():
-    if args.minimal:
+    if args.minimal or args.minimalcerbera:
         return send_from_directory("web", "minimal.html")
     return send_from_directory("web", "index.html")
 
@@ -198,19 +204,24 @@ def connect_iruna():
     def background_connect():
         import time
         if client.connect_and_start(url):
-            if args.minimal:
-                print("[*] Connected via minimal UI. Waiting for world to load to auto-start Zimov...")
+            if args.minimal or args.minimalcerbera:
+                mode_name = "Cerbera" if args.minimalcerbera else "Zimov"
+                print(f"[*] Connected via minimal UI. Waiting for world to load to auto-start {mode_name}...")
                 # Wait until we are fully loaded in a map
                 while not state.current_map_hex:
                     time.sleep(1)
                 # Short buffer to ensure environment is stabilized
                 time.sleep(2)
                 
-                print("[*] World loaded. Auto-starting Zimov...")
+                print(f"[*] World loaded. Auto-starting {mode_name}...")
                 if not getattr(state, "auto_nemesis_running", False):
-                    from core.boss_module import auto_zimov_loop
-                    # Start the loop in this thread
-                    auto_zimov_loop(client.sock)
+                    if args.minimalcerbera:
+                        from core.boss_module import auto_cerbera_loop
+                        auto_cerbera_loop(client.sock)
+                    else:
+                        from core.boss_module import auto_zimov_loop
+                        # Start the loop in this thread
+                        auto_zimov_loop(client.sock)
 
     threading.Thread(target=background_connect, daemon=True).start()
     return jsonify({"status": "Connecting..."})
@@ -237,6 +248,9 @@ def get_state():
         "auto_zimov_running": getattr(state, "auto_zimov_running", False),
         "auto_zimov_kill_count": getattr(state, "auto_zimov_kill_count", 0),
         "auto_zimov_run_count": getattr(state, "auto_zimov_run_count", 0),
+        "auto_cerbera_running": getattr(state, "auto_cerbera_running", False),
+        "auto_cerbera_kill_count": getattr(state, "auto_cerbera_kill_count", 0),
+        "auto_cerbera_run_count": getattr(state, "auto_cerbera_run_count", 0),
         "spina_earned": getattr(state, "spina_earned", 0),
         "player_hp": getattr(state, "player_hp", 0),
         "player_mp": getattr(state, "player_mp", 0),

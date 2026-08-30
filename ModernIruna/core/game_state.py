@@ -50,6 +50,10 @@ class GameState:
         self.auto_zimov_running = False
         self.auto_zimov_kill_count = 0
         self.auto_zimov_run_count = 0
+        
+        self.auto_cerbera_running = False
+        self.auto_cerbera_kill_count = 0
+        self.auto_cerbera_run_count = 0
         self.spina_earned = 0
         self.pet_uid_hex = None
         self.boss_id_hex = None

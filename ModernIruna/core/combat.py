@@ -78,8 +78,27 @@ def do_auto_revive(sock):
     hex_send(sock, "00020134", "REVIVE REQUEST")
     
     print("[*] Waiting to arrive in town...")
-    time.sleep(6.0) # Wait for 0111 and map sync to finish
     
+    state.teleport_event.clear()
+    state.map_ready_event.clear()
+    state.map_data_event.clear()
+    
+    # Wait for the revive warp to start (b503)
+    if state.teleport_event.wait(timeout=10.0):
+        # Wait for map ready (0138)
+        if state.map_ready_event.wait(timeout=10.0):
+            # Send 013a and 3002
+            hex_send(sock, "0002013a", label="MAP SYNC ACK")
+            hex_send(sock, f"000f30021100000000000000000000{state.current_map_hex}", label="MAP ENTRY")
+            # Wait for 3003
+            state.map_data_event.wait(timeout=5.0)
+            print("[+] Revive map sync complete.")
+        else:
+            print("[-] Timeout waiting for Map Ready (0138) during revive.")
+    else:
+        print("[-] Timeout waiting for Map Sync (b503) during revive.")
+    
+    time.sleep(0.5)
     # Check if we were in the PT area previously (Map 2707 usually, but we check if we have pt area coords in memory or something).
     # Since we don't have a strict flag, we'll just check if the last map was a PT Area map (starts with 0a).
     # Actually, pt area maps are instanced versions of 700000 or similar.

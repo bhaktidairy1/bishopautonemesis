@@ -399,7 +399,7 @@ def relay(src, dst, label):
                         log("Auto Attack triggered and turned OFF.")
                         
                         def execute_attack(target_uid):
-                            time.sleep(0.5)  # Wait 0.5 seconds before striking
+                            #time.sleep(0.5)  # Wait 0.5 seconds before striking
                             
                             # The multi-part Backstab skill attack:
                             # Part 1: Skill Cast execution
@@ -410,7 +410,6 @@ def relay(src, dst, label):
                             if active_server_socket:
                                 active_server_socket.sendall(p1)
                                 log(f"C→S [AUTO_ATTACK_1]: {p1.hex()}")
-                                time.sleep(0.05)
                                 active_server_socket.sendall(p2)
                                 log(f"C→S [AUTO_ATTACK_2]: {p2.hex()}")
                                 

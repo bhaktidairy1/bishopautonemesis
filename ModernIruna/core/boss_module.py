@@ -5,7 +5,8 @@ from core.game_state import state
 from core.packet_helpers import hex_send, upload_to_discord
 from core.packets import (
     PKT_MAP_SYNC_BEGIN, PKT_MOVEMENT_STEPS, PKT_WARP_SYNC_START, PKT_WARP_SYNC_END,
-    build_warp_exit_packet, build_warp_position_packet, build_warp_entry_packet
+    build_warp_exit_packet, build_warp_position_packet, build_warp_entry_packet,
+    PKT_COORD_PREFIX
 )
 from core.map_teleport import teleport
 from core.inventory import calculate_bag_usage
@@ -29,7 +30,7 @@ def log_and_exit(msg):
 BACKSTAB_CAST_PREFIX   = "000a01431b870102"
 BACKSTAB_DAMAGE_PREFIX = "000e01484e210102"
 
-def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: str = "00", send_exit: bool = True, wait_3003: bool = True):
+def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: str = "00", send_exit: bool = True, wait_3003: bool = True, send_initial_coords: bool = True):
     """
     Executes a single step of the warp sequence and waits for b503/b505 Map Sync.
     """
@@ -63,13 +64,16 @@ def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: st
     hex_send(sock, PKT_MAP_SYNC_BEGIN)
     hex_send(sock, build_warp_entry_packet(to_map))
     
+    # The vanilla client immediately sends its initial coords upon map entry
+    if send_initial_coords:
+        initial_coords = PKT_COORD_PREFIX + x + y
+        hex_send(sock, initial_coords, "INITIAL_COORDS")
+    
     # Wait for 3003 Map Data
     if wait_3003:
         print("    [!] Waiting for Map Data (3003)...")
         if not state.map_data_event.wait(timeout=10):
-            try: sock.close()
-            except: pass
-            log_and_exit("Map Data timeout (3003). Server unresponsive.")
+            print("[-] [WARNING] Map Data timeout (3003). Server unresponsive, but continuing sequence...")
     
     time.sleep(0.1)
 
@@ -223,15 +227,15 @@ def kakeula_heal_thread(sock, return_map_id=15900, return_x=67, return_y=128):
         state.in_scripted_sequence = False
 
 
-def kakeula_sell_thread(sock):
+def kakeula_sell_thread(sock, return_map_id=15900, return_x=67, return_y=128):
     """
     Scripted flow:
       1. Teleport to Kakeula (25100, 87, 92)
       2. Wait for map load
       3. Send merchant interaction packet (0208)
-      4. Bulk sell whitelisted items (Zimov Tail, Lithium, Zimov, Esmeralda)
+      4. Bulk sell whitelisted items
       5. Wait for 0120 (inventory refresh)
-      6. Return to Dierolt
+      6. Return to designated map
     """
     if state.in_scripted_sequence:
         print("[!] Cannot start Sell script — a sequence is already running")
@@ -258,7 +262,7 @@ def kakeula_sell_thread(sock):
         print("[*] Opening merchant...")
 
         # Step 2: Open Merchant
-        hex_send(sock, "000402080000", label="OPEN MERCHANT")
+        hex_send(sock, "000402080000", label="OPEN Merchant")
         time.sleep(1.0) # Wait a moment for merchant to open
 
         # Step 3 & 4: Find items to sell and build packet
@@ -266,7 +270,11 @@ def kakeula_sell_thread(sock):
             10430, # Zimov Tail
             10431, # Lithium
             28574, # Zimov (Crysta)
-            5209, 5703, 5734, 5775, 5884 # Esmeralda variants
+            5209, 5703, 5734, 5775, 5884, # Esmeralda variants
+            10950, # Werewolf Fur
+            10951, # Werewolf Claw
+            4047,  # Battle Axe
+            29519  # Cerbera (Crysta)
         }
         
         stacks_to_sell = [] # List of tuples: (instance_hex, count_hex)
@@ -313,7 +321,11 @@ def kakeula_sell_thread(sock):
                 10430: 2300,   # Zimov Tail
                 10431: 25000,  # Lithium
                 28574: 1,      # Zimov (Crysta)
-                5209: 50000, 5703: 50000, 5734: 50000, 5775: 50000, 5884: 50000 # Esmeralda variants
+                5209: 50000, 5703: 50000, 5734: 50000, 5775: 50000, 5884: 50000, # Esmeralda variants
+                10950: 1700,   # Werewolf Fur
+                10951: 22000,  # Werewolf Claw
+                4047:  60000,  # Battle Axe
+                29519: 1       # Cerbera (Crysta)
             }
             
             spina_gained = 0
@@ -333,9 +345,9 @@ def kakeula_sell_thread(sock):
                 state.spina_earned += spina_gained
                 print(f"[+] Earned {spina_gained:,} Spina from this run! (Total: {state.spina_earned:,})")
 
-        # Step 6: Return to Dierolt
-        print("[*] Returning to Dierolt (15900)...")
-        teleport(sock, 15900, 67, 128)
+        # Step 6: Return to designated map
+        print(f"[*] Returning to Map {return_map_id}...")
+        teleport(sock, return_map_id, return_x, return_y)
 
         print("\n[+] Sell Sequence Complete.")
 
@@ -362,11 +374,14 @@ def auto_zimov_loop(sock):
             needs_heal = False
             player_mp = getattr(state, "player_mp", 9999) # Default high so we don't heal if unknown
             
-            if player_mp < 1000:
+            if getattr(state, "player_max_mp", 0) == 0:
+                # MP is completely unknown (unsynced). Fallback to kill-count safety.
+                if consecutive_kills >= 7:
+                    print(f"[*] MP is unknown and reached {consecutive_kills} kills. Need to heal for safety!")
+                    needs_heal = True
+            elif player_mp < 1000:
+                # MP is known and actually low
                 print(f"[*] MP is low ({player_mp}). Need to heal!")
-                needs_heal = True
-            elif consecutive_kills >= 7:
-                print(f"[*] Reached {consecutive_kills} kills since last heal. Need to heal!")
                 needs_heal = True
                 
             if needs_heal:
@@ -416,6 +431,177 @@ def auto_zimov_loop(sock):
         state.auto_zimov_running = False
         print("\n==================================================")
         print(" [AUTO ZIMOV LOOP STOPPED]")
+        print("==================================================")
+
+def cerbera_battle_thread(sock):
+    """
+    Scripted flow:
+      1. Warp from Boss Base (9920) to Hallway (995c)
+      2. Warp from Hallway (995c) to Boss Room (997a)
+      3. Wait for Cerbera to spawn (catch UID)
+      4. Use Backstab twice (max damage B4)
+      5. Wait for drops
+      6. Warp back to Hallway (995c)
+      7. Warp back to Boss Base (9920)
+    """
+    if state.current_map_hex != "9920":
+        print("[!] Cannot start Cerbera script — not in Boss Base (9920)")
+        return
+        
+    print("\n" + "="*50)
+    print(" [CERBERA AUTOMATION STARTED]")
+    print("="*50)
+    
+    state.in_scripted_sequence = True
+    state.boss_id_hex = None
+    state.boss_spawn_event.clear()
+    state.boss_death_event.clear()
+    
+    try:
+        # Step 1: 9920 -> 995c (coords 1b00 4800, portal 03)
+        # Suppress coords here too as per user request
+        do_warp_sync(sock, "9920", "995c", "1b00", "4800", portal_id="03", send_initial_coords=False)
+        
+        # Step 2: 995c -> 997a (coords 6400 4100, portal 06)
+        # Wait for 3003 map data, but DO NOT send coordinates in the boss room until we hit!
+        do_warp_sync(sock, "995c", "997a", "6400", "4100", portal_id="06", wait_3003=True, send_initial_coords=False)
+        
+        # Step 3: Wait for Boss Spawn
+        print("\n[*] Waiting for Cerbera to spawn...")
+        if not state.boss_spawn_event.wait(timeout=10):
+            log_and_exit("Boss spawn timeout! (Waited 10s for 0248/0245)")
+        else:
+            print(f"[+] Cerbera Spawned! UID: {state.boss_id_hex}")
+            
+            # Step 4: Backstab
+            print("[*] Executing Backstab Sequence...")
+            
+            # Send exact coords (100, 74) which is hex 64004a00 right before backstabbing
+            hex_send(sock, "0006010164004a00", "COORDS (100, 74)")
+            
+            # The exact bytes from the logged loop
+            # [AUTO_ATTACK_1]: 000a01431b870102 + <UID>
+            cast_pkt = "000a01431b870102" + state.boss_id_hex
+            hex_send(sock, cast_pkt, "BACKSTAB_CAST")
+            
+            # [AUTO_ATTACK_2]: 000e01484e210102 + <UID> + 000000b4
+            dmg_pkt = "000e01484e210102" + state.boss_id_hex + "000000b4"
+            hex_send(sock, dmg_pkt, "BACKSTAB_DAMAGE")
+            
+            # Wait for boss death / drops
+            print("[*] Waiting for Boss death / drops...")
+            state.boss_death_event.wait(timeout=10)
+            
+            # Release combat state
+            print("[*] Releasing combat state...")
+            battle_end_pkt = "00060157" + state.boss_id_hex
+            hex_send(sock, battle_end_pkt)
+            
+        if state.is_reviving or state.current_map_hex != "997a":
+            print("[!] Player died or map changed during sequence. Aborting Cerbera battle thread.")
+            return
+            
+        # Step 5: 997a -> 995c (coords 1b00 5200)
+        # Genuine client skips 3002 Exit packet
+        do_warp_sync(sock, "997a", "995c", "1b00", "5200", send_exit=False, wait_3003=False)
+        
+        # Step 6: 995c -> 9920 (coords 5500 3800, portal 07)
+        do_warp_sync(sock, "995c", "9920", "5500", "3800", portal_id="07", wait_3003=True)
+        
+        print("\n[+] Cerbera Sequence Complete.")
+        
+    except Exception as e:
+        print(f"[CRITICAL] Cerbera sequence failed: {e}")
+        if "10054" in str(e) or "closed" in str(e).lower() or isinstance(e, (ConnectionError, OSError)):
+            log_and_exit(f"Connection dropped ({e}). Stopping automation.")
+        
+    finally:
+        state.in_scripted_sequence = False
+        print("="*50 + "\n")
+
+def auto_cerbera_loop(sock):
+    """
+    Loops 7 Cerbera kills, followed by 1 Kakeula heal, repeatedly.
+    """
+    state.auto_cerbera_running = True
+    print("\n==================================================")
+    print(" [AUTO CERBERA LOOP STARTED]")
+    print("==================================================")
+    
+    try:
+        consecutive_kills = 0
+        while state.auto_cerbera_running:
+            player_died = False
+            
+            # Check if we should heal/sell
+            needs_heal = False
+            player_mp = getattr(state, "player_mp", 9999)
+            
+            if getattr(state, "player_max_mp", 0) == 0:
+                # MP is completely unknown (unsynced). Fallback to kill-count safety.
+                if consecutive_kills >= 7:
+                    print(f"[*] MP is unknown and reached {consecutive_kills} kills. Need to heal for safety!")
+                    needs_heal = True
+            elif player_mp < 1000:
+                # MP is known and actually low
+                print(f"[*] MP is low ({player_mp}). Need to heal!")
+                needs_heal = True
+                
+            if consecutive_kills >= 7:
+                print(f"[*] Reached {consecutive_kills} kills. Running town sequence.")
+                needs_heal = True
+                
+            if player_died:
+                print("[*] Player died! Running town sequence to warp back to farm spot.")
+                needs_heal = True
+                
+            if needs_heal:
+                bag_usage = calculate_bag_usage()
+                
+                # Find Fur/Claw counts
+                fur_count = 0
+                claw_count = 0
+                for item in state.inventory.values():
+                    if item["id"] == 10950:
+                        fur_count = item["count"]
+                    elif item["id"] == 10951:
+                        claw_count = item["count"]
+                        
+                print(f"\n[*] Auto-Cerbera: Checking Bag Space (Furs: {fur_count}, Claws: {claw_count}, {bag_usage}/50 slots used)")
+                
+                # Trigger sell if fur reaches a threshold (or claw, but fur is more common)
+                if fur_count >= 1500 or claw_count >= 1500:
+                    print(f"[*] Reached item threshold! Initiating Auto-Sell...")
+                    kakeula_sell_thread(sock, return_map_id=39200, return_x=85, return_y=56)
+                else:
+                    print("[*] Auto-Cerbera: Healing at Kakeula...")
+                    kakeula_heal_thread(sock, return_map_id=39200, return_x=85, return_y=56)
+                    
+                consecutive_kills = 0
+                state.auto_cerbera_run_count += 1
+                time.sleep(0.5)
+                continue
+                
+            print(f"\n[*] Auto-Cerbera: Kill {consecutive_kills+1} (Since last heal)")
+            
+            cerbera_battle_thread(sock)
+            state.auto_cerbera_kill_count += 1
+            consecutive_kills += 1
+            
+            time.sleep(0.5)
+            
+            if state.current_map_hex != "9920" or getattr(state, "is_reviving", False):
+                print("[!] Player is not in Boss Base (likely died). Breaking Cerbera kill loop.")
+                player_died = True
+                consecutive_kills = 7 
+                continue
+            
+    except Exception as e:
+        print(f"[-] Auto-Cerbera Loop Error: {e}")
+    finally:
+        state.auto_cerbera_running = False
+        print("\n==================================================")
+        print(" [AUTO CERBERA LOOP STOPPED]")
         print("==================================================")
 
 def cast_bishop_buffs(sock):
@@ -537,6 +723,7 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
                     continue
                 else:
                     print(f"[*] Warping back to farm spot (Map {start_map_id})...")
+                    from core.map_teleport import teleport
                     res = teleport(sock, start_map_id, start_x, start_y)
                     if not res or res.get("status") != "success":
                         print("[!] Failed to warp back to farm spot (instance expired?). Stopping Auto-Nemesis.")
