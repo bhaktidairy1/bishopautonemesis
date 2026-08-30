@@ -7,7 +7,11 @@ from core.map_teleport import teleport
 
 def create_and_enter_pt_area(sock, map_hex=None):
     if not map_hex:
-        map_hex = getattr(state, 'pt_area_base_map_hex', getattr(state, 'current_map_hex', '000086c4'))
+        # If manually created, we use the current map and save it as the new default
+        map_hex = getattr(state, 'current_map_hex', '000086c4')
+        state.pt_area_base_map_hex = map_hex
+        print(f"[*] Set Default PT Area Map to: {map_hex}")
+        
     if len(map_hex) < 8: map_hex = map_hex.zfill(8)
     
     print(f"[*] Initiating PT Area Sequence for Map {map_hex}...")
@@ -51,8 +55,8 @@ def create_and_enter_pt_area(sock, map_hex=None):
 
 def join_pt_area(sock, map_hex=None):
     if not map_hex:
-        # Default to whatever map the user was currently tracking in state, or fallback to current map
-        map_hex = getattr(state, 'pt_area_base_map_hex', getattr(state, 'current_map_hex', '000086c4'))
+        # Default to whatever map the user has explicitly set via UI or Create button
+        map_hex = getattr(state, 'pt_area_base_map_hex', '000086c4')
         
     if len(map_hex) < 8: map_hex = map_hex.zfill(8)
     
