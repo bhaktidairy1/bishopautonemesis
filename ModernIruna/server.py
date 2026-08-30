@@ -142,11 +142,15 @@ def static_files(path):
 
 @app.route("/api/disconnect", methods=["POST"])
 def disconnect_iruna():
+    from core.packet_helpers import upload_log_to_discord
+    upload_log_to_discord(force=True)
     client.disconnect()
     return jsonify({"status": "Disconnected successfully"})
 
 @app.route("/disconnect", methods=["GET"])
 def disconnect_route():
+    from core.packet_helpers import upload_log_to_discord
+    upload_log_to_discord(force=True)
     client.disconnect()
     return "Disconnected successfully! You can close this tab or return to the main page."
 
