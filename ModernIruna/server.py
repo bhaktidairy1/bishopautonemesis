@@ -322,20 +322,18 @@ def api_party_invite():
 @app.route("/api/pt_area/map", methods=["POST"])
 def api_set_pta_map():
     data = request.json
-    map_input = str(data.get("map_hex", "")).strip().lower()
+    map_input = str(data.get("map_hex", "")).strip()
     if not map_input:
-        return jsonify({"error": "Missing map"}), 400
+        return jsonify({"error": "Missing map ID"}), 400
         
-    # If the user inputs a purely decimal number (like 200002) instead of hex
-    if map_input.isdigit() and len(map_input) < 8:
-        map_hex = hex(int(map_input))[2:]
-    else:
-        # Remove 0x prefix if they used it
-        map_hex = map_input.replace("0x", "")
+    # Strictly enforce decimal only inputs as per user request
+    if not map_input.isdigit():
+        return jsonify({"error": "Only decimal Map IDs are accepted (e.g. 200002)"}), 400
         
-    map_hex = map_hex.zfill(8)
+    map_hex = hex(int(map_input))[2:].zfill(8)
+    
     state.pt_area_base_map_hex = map_hex
-    print(f"[*] Default PT Area Map updated to: {map_hex} (Input: {map_input})")
+    print(f"[*] Default PT Area Map updated to: {map_hex} (Decimal: {map_input})")
     return jsonify({"success": True})
 @app.route("/api/party/accept", methods=["POST"])
 def api_party_accept():
