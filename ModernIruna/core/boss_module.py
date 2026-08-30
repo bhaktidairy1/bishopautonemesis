@@ -322,10 +322,10 @@ def kakeula_sell_thread(sock, return_map_id=15900, return_x=67, return_y=128):
                 10431: 25000,  # Lithium
                 28574: 1,      # Zimov (Crysta)
                 5209: 50000, 5703: 50000, 5734: 50000, 5775: 50000, 5884: 50000, # Esmeralda variants
-                10950: 1700,   # Werewolf Fur
-                10951: 22000,  # Werewolf Claw
-                4047:  60000,  # Battle Axe
-                29519: 1       # Cerbera (Crysta)
+                10950: 6300,   # Werewolf Fur
+                10951: 57000,  # Werewolf Claw
+                4047:  50000,  # Battle Axe (same as Esmeralda)
+                29519: 10000   # Cerbera (Crysta)
             }
             
             spina_gained = 0
