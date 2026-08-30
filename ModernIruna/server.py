@@ -260,6 +260,9 @@ def get_state():
         "player_mp": getattr(state, "player_mp", 0),
         "player_max_hp": getattr(state, "player_max_hp", 0),
         "player_max_mp": getattr(state, "player_max_mp", 0),
+        "pta_rejoin_mode": state.pta_rejoin_mode,
+        "pta_active": getattr(state, "pta_active", False),
+        "pta_base_map_hex": getattr(state, "pt_area_base_map_hex", "000086c4"),
         "party": state.party_members,
         "pendingInvite": state.pending_party_invite,
         "stall_items": getattr(state, "stall_items", []),
@@ -316,6 +319,16 @@ def api_party_invite():
     hex_send(client.sock, pkt, f"PARTY INVITE -> {uid}")
     return jsonify({"success": True})
 
+@app.route("/api/pt_area/map", methods=["POST"])
+def api_set_pta_map():
+    data = request.json
+    map_hex = data.get("map_hex")
+    if not map_hex:
+        return jsonify({"error": "Missing map_hex"}), 400
+        
+    state.pt_area_base_map_hex = map_hex
+    print(f"[*] Default PT Area Map updated to: {map_hex}")
+    return jsonify({"success": True})
 @app.route("/api/party/accept", methods=["POST"])
 def api_party_accept():
     if not client or not client.sock:

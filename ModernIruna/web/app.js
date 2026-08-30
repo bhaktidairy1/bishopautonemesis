@@ -425,6 +425,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }).catch(e => console.error(e));
     });
 
+    document.getElementById("set-pta-map-btn").addEventListener("click", () => {
+        const inputEl = document.getElementById("pta-map-input");
+        const mapHex = inputEl.value.trim();
+        if (!mapHex) return;
+        
+        fetch("/api/pt_area/map", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ map_hex: mapHex })
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                inputEl.value = ""; // clear after success
+            }
+        });
+    });
+
     document.getElementById("create-pt-area-btn").addEventListener("click", () => {
         fetch("/api/action", {
             method: "POST",
@@ -653,6 +669,14 @@ document.addEventListener("DOMContentLoaded", () => {
             ptaIndicator.style.background = "rgba(255, 50, 50, 0.3)";
             ptaIndicator.style.color = "#ff3232";
             ptaIndicator.style.border = "1px solid #ff3232";
+        }
+        
+        const ptaMapInput = document.getElementById("pta-map-input");
+        if (ptaMapInput && state.pta_base_map_hex) {
+            if (ptaMapInput.dataset.syncedHex !== state.pta_base_map_hex) {
+                ptaMapInput.placeholder = "Map: " + state.pta_base_map_hex;
+                ptaMapInput.dataset.syncedHex = state.pta_base_map_hex;
+            }
         }
         
         if (!state.auto_nemesis_running) {
