@@ -2,7 +2,7 @@ import time
 import binascii
 
 from core.game_state import state
-from core.packet_helpers import hex_send
+from core.packet_helpers import hex_send, upload_to_discord
 from core.packets import (
     PKT_MAP_SYNC_BEGIN, PKT_MOVEMENT_STEPS, PKT_WARP_SYNC_START, PKT_WARP_SYNC_END,
     build_warp_exit_packet, build_warp_position_packet, build_warp_entry_packet
