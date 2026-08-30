@@ -135,7 +135,6 @@ def zimov_battle_thread(sock):
             print("[*] Releasing combat state...")
             battle_end_pkt = "00060157" + state.boss_id_hex
             hex_send(sock, battle_end_pkt)
-            time.sleep(0.1)
             
         if state.is_reviving or state.current_map_hex != "3e76":
             print("[!] Player died or map changed during sequence. Aborting Zimov battle thread.")
@@ -391,7 +390,7 @@ def auto_zimov_loop(sock):
                     
                 consecutive_kills = 0
                 state.auto_zimov_run_count += 1
-                time.sleep(1.5)
+                time.sleep(0.5)
                 continue
                 
             print(f"\n[*] Auto-Zimov: Kill {consecutive_kills+1} (Since last heal)")
@@ -402,7 +401,7 @@ def auto_zimov_loop(sock):
             consecutive_kills += 1
             
             # Small pause to ensure map fully registers before next iteration
-            time.sleep(1.5)
+            time.sleep(0.5)
             
             if state.current_map_hex != "3e1c" or getattr(state, "is_reviving", False):
                 print("[!] Player is not in Dierolt (likely died). Breaking Zimov kill loop.")
