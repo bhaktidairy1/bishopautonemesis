@@ -352,6 +352,16 @@ document.addEventListener("DOMContentLoaded", () => {
         sendAction({type: "toggle_npc_talk"});
     });
 
+    // Stat Points Allocation
+    document.querySelectorAll(".stat-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const hex = btn.dataset.hex;
+            if (hex) {
+                sendAction({type: "inject_hex", hex: hex});
+            }
+        });
+    });
+
     // Teleport
     const tpMapId = document.getElementById("tp-mapid");
     const tpX = document.getElementById("tp-x");
