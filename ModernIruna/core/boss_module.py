@@ -733,6 +733,11 @@ def auto_nemesis_loop(sock, target_name=None, target_id=None):
                     continue
 
             # 0.5 Check if we accidentally changed maps
+            if getattr(state, 'pta_resetting', False):
+                # Pause logic while PT Area is resetting/rejoining
+                time.sleep(1.0)
+                continue
+                
             if state.current_map_hex and int(state.current_map_hex, 16) != start_map_id:
                 if start_map_id == 44640:
                     print("[*] PT Area expired or map changed! Rejoining PT Area...")
