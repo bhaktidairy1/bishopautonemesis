@@ -140,18 +140,17 @@ def index():
 def static_files(path):
     return send_from_directory("web", path)
 
-@app.route("/api/disconnect", methods=["POST"])
-def disconnect_iruna():
-    from core.packet_helpers import upload_log_to_discord
-    upload_log_to_discord(force=True)
-    client.disconnect()
-    return jsonify({"status": "Disconnected successfully"})
-
 @app.route("/disconnect", methods=["GET"])
 def disconnect_route():
     from core.packet_helpers import upload_log_to_discord
     upload_log_to_discord(force=True)
-    client.disconnect()
+    if client and client.sock:
+        try:
+            client.sock.close()
+        except Exception:
+            pass
+        client.sock = None
+        client.is_connected = False
     return "Disconnected successfully! You can close this tab or return to the main page."
 
 @app.route("/api/island/connect", methods=["POST"])
