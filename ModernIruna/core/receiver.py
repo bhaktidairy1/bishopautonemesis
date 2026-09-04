@@ -393,16 +393,23 @@ def handle_0130_char_stats(payload: bytes):
     import re
     data_hex = binascii.hexlify(payload).decode()
     try:
-        matches = re.finditer(r'([0-9a-f]{8})([0-9a-f]{8})([0-9a-f]{8})([0-9a-f]{4})', data_hex)
+        # Use positive lookahead to avoid consuming characters. This prevents an invalid match
+        # from consuming bytes that are part of the real valid match.
+        matches = re.finditer(r'(?=([0-9a-f]{8})([0-9a-f]{8})([0-9a-f]{8})([0-9a-f]{4}))', data_hex)
         for m in matches:
+            # Only match on byte boundaries (even indices)
+            if m.start() % 2 != 0:
+                continue
+                
             spina_hex, hp_hex, mp_hex, namelen_hex = m.groups()
             max_hp = int(hp_hex, 16)
             max_mp = int(mp_hex, 16)
             name_len = int(namelen_hex, 16)
             
-            # Name length usually 2 to 32 chars. Max HP/MP sanity checks.
-            if 0 < max_hp < 500000 and 0 < max_mp < 100000 and 2 <= name_len <= 32:
-                end_idx = m.end() + (name_len * 2)
+            # Name length usually 1 to 32 chars. Max HP/MP sanity checks.
+            if 0 < max_hp < 500000 and 0 < max_mp < 100000 and 1 <= name_len <= 32:
+                # end_idx is 28 chars (14 bytes) from m.start() + name length
+                end_idx = m.start() + 28 + (name_len * 2)
                 # Check if the string is followed by a 00 byte
                 if end_idx + 2 <= len(data_hex) and data_hex[end_idx:end_idx+2] == '00':
                     spina = int(spina_hex, 16)
