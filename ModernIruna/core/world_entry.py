@@ -103,38 +103,41 @@ def _extract_0111_spawn(data_hex: str):
 
 def _extract_0130_stats(data_hex: str):
     """
-    Extract Spina, Max HP, and Max MP from the 0130 Character Stats packet
-    that is sent during the world entry sequence.
-    The packet has variable length boolean flags (010101...), so fixed offsets fail.
-    We use regex to skip the variable flags and grab the exact 4-byte integers.
+    Extract Spina, Max HP, and Max MP from the 0130 Character Stats packet.
+    The packet structure has variable length boolean flags, but we can reliably
+    find the data by searching backward from the character name string length.
+    Structure: [Spina:4b][MaxHP:4b][MaxMP:4b][NameLen:2b][Name:NameLen b]00
     """
     import re
-    idx = data_hex.find("013000010001")
+    idx = data_hex.find("0130")
     if idx == -1:
         return False
 
     try:
-        # 013000010001 [Variable 01s] 000100 [9 bytes/18 chars unknown] [Spina(8)] [MaxHP(8)] [MaxMP(8)]
-        match = re.search(r'013000010001(?:01)+000100.{18}(.{8})(.{8})(.{8})', data_hex[idx:])
-        if match:
-            spina_hex, hp_hex, mp_hex = match.groups()
-            
-            spina = int(spina_hex, 16)
+        matches = re.finditer(r'([0-9a-f]{8})([0-9a-f]{8})([0-9a-f]{8})([0-9a-f]{4})', data_hex[idx:])
+        for m in matches:
+            spina_hex, hp_hex, mp_hex, namelen_hex = m.groups()
             max_hp = int(hp_hex, 16)
             max_mp = int(mp_hex, 16)
+            name_len = int(namelen_hex, 16)
             
-            if 0 < max_hp < 500000 and 0 < max_mp < 100000:
-                state.player_max_hp = max_hp
-                state.player_max_mp = max_mp
-                state.player_spina = spina
-                
-                if state.player_hp <= 1:
-                    state.player_hp = max_hp
-                if state.player_mp <= 1:
-                    state.player_mp = max_mp
+            # Name length usually 2 to 32 chars. Max HP/MP sanity checks.
+            if 0 < max_hp < 500000 and 0 < max_mp < 100000 and 2 <= name_len <= 32:
+                end_idx = m.end() + (name_len * 2)
+                # Check if the string is followed by a 00 byte
+                if end_idx + 2 <= len(data_hex[idx:]) and data_hex[idx:][end_idx:end_idx+2] == '00':
+                    spina = int(spina_hex, 16)
+                    state.player_max_hp = max_hp
+                    state.player_max_mp = max_mp
+                    state.player_spina = spina
                     
-                print(f"[+] Login Stats Parsed: Spina: {spina:,} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
-                return True
+                    if state.player_hp <= 1:
+                        state.player_hp = max_hp
+                    if state.player_mp <= 1:
+                        state.player_mp = max_mp
+                        
+                    print(f"[+] Login Stats Parsed: Spina: {spina:,} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
+                    return True
     except Exception as e:
         print(f"[-] Failed to parse 0130 stats: {e}")
     return False

@@ -386,33 +386,37 @@ def handle_0130_char_stats(payload: bytes):
     """
     Opcode 0x0130 — Initial Character Stats Sync.
     Sent when joining a map or logging in. Contains Spina, Max HP, and Max MP.
-    The packet has variable length boolean flags (010101...), so fixed offsets fail.
+    The packet structure has variable length boolean flags, but we can reliably
+    find the data by searching backward from the character name string length.
+    Structure: [Spina:4b][MaxHP:4b][MaxMP:4b][NameLen:2b][Name:NameLen b]00
     """
     import re
     data_hex = binascii.hexlify(payload).decode()
     try:
-        # 00010001 [Variable 01s] 000100 [9 bytes/18 chars unknown] [Spina(8)] [MaxHP(8)] [MaxMP(8)]
-        match = re.search(r'00010001(?:01)+000100.{18}(.{8})(.{8})(.{8})', data_hex)
-        if match:
-            spina_hex, hp_hex, mp_hex = match.groups()
-            
-            spina = int(spina_hex, 16)
+        matches = re.finditer(r'([0-9a-f]{8})([0-9a-f]{8})([0-9a-f]{8})([0-9a-f]{4})', data_hex)
+        for m in matches:
+            spina_hex, hp_hex, mp_hex, namelen_hex = m.groups()
             max_hp = int(hp_hex, 16)
             max_mp = int(mp_hex, 16)
+            name_len = int(namelen_hex, 16)
             
-            # We set current to max since this happens on login/map change
-            if 0 < max_hp < 500000 and 0 < max_mp < 100000:
-                state.player_max_hp = max_hp
-                state.player_max_mp = max_mp
-                state.player_spina = spina
-                
-                # Only set current if we don't have one
-                if state.player_hp <= 1:
-                    state.player_hp = max_hp
-                if state.player_mp <= 1:
-                    state.player_mp = max_mp
+            # Name length usually 2 to 32 chars. Max HP/MP sanity checks.
+            if 0 < max_hp < 500000 and 0 < max_mp < 100000 and 2 <= name_len <= 32:
+                end_idx = m.end() + (name_len * 2)
+                # Check if the string is followed by a 00 byte
+                if end_idx + 2 <= len(data_hex) and data_hex[end_idx:end_idx+2] == '00':
+                    spina = int(spina_hex, 16)
+                    state.player_max_hp = max_hp
+                    state.player_max_mp = max_mp
+                    state.player_spina = spina
                     
-                print(f"[*] Login Stats Loaded: Spina: {spina:,} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
+                    if state.player_hp <= 1:
+                        state.player_hp = max_hp
+                    if state.player_mp <= 1:
+                        state.player_mp = max_mp
+                        
+                    print(f"[*] Login Stats Loaded: Spina: {spina:,} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
+                    return
     except Exception as e:
         print(f"[-] Failed to parse 0130 stats in receiver: {e}")
 
