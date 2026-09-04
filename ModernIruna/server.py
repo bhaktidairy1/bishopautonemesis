@@ -142,10 +142,14 @@ def static_files(path):
 
 @app.route("/disconnect", methods=["GET"])
 def disconnect_route():
-    from core.packet_helpers import upload_log_to_discord
-    upload_log_to_discord(force=True)
+    from core.packet_helpers import upload_to_discord, hex_send
+    import time
+    
+    upload_to_discord(force=True)
     if client and client.sock:
         try:
+            hex_send(client.sock, "0002f012", "LOGOUT_TO_TITLE")
+            time.sleep(0.5)
             client.sock.close()
         except Exception:
             pass
