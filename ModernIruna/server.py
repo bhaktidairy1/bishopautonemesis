@@ -148,8 +148,6 @@ def disconnect_route():
     upload_to_discord(force=True)
     if client and client.sock:
         try:
-            hex_send(client.sock, "0002f012", "LOGOUT_TO_TITLE")
-            time.sleep(0.5)
             client.sock.close()
         except Exception:
             pass
