@@ -75,6 +75,62 @@ def enter_island(sock, island_id_hex):
     
     state.in_island_map = True
 
+def enter_island_edit_mode(sock):
+    """
+    Sends the a000 packet to enter YOUR OWN island in EDIT mode.
+    Based on the user's packet capture.
+    """
+    print(f"[*] Entering your island in EDIT mode...")
+    
+    # 1. Enter island command for own island in EDIT mode (00010000 suffix)
+    hex_send(sock, f"000aa00000{state.char_id_hex}00010000", "ISLAND EDIT ENTER")
+    time.sleep(1.0)
+    
+    # 2. Map Load Handshake
+    hex_send(sock, "0003020700", "ISLAND_EDIT_MAGIC_1")
+    hex_send(sock, f"000623f3{state.char_id_hex}", "ISLAND_EDIT_POST_MAP")
+    time.sleep(0.5)
+    
+    # 3. Movement Handshake
+    hex_send(sock, "00023300", "ISLAND_EDIT_MOVE_1")
+    hex_send(sock, "00023303", "ISLAND_EDIT_MOVE_2")
+    time.sleep(0.5)
+    
+    # 4. Movement Ready
+    hex_send(sock, "00026002", "ISLAND_EDIT_MOVE_READY")
+    time.sleep(0.5)
+    
+    # 5. Island specifics
+    hex_send(sock, "00022400", "ISLAND_EDIT_SPECIFIC_1")
+    hex_send(sock, "00022406", "ISLAND_EDIT_SPECIFIC_2")
+    time.sleep(0.5)
+    
+    hex_send(sock, "0002013a", "ISLAND_EDIT_SYNC_ACK")
+    hex_send(sock, "00022084", "ISLAND_EDIT_MAGIC_2")
+    hex_send(sock, "0002a00c", "ISLAND_EDIT_MAGIC_3")
+    hex_send(sock, "00020160", "ISLAND_EDIT_MAGIC_4")
+    time.sleep(0.5)
+    
+    hex_send(sock, "0003840400", "ISLAND_EDIT_MAGIC_5")
+    hex_send(sock, "0002a056", "ISLAND_EDIT_MAGIC_6")
+    hex_send(sock, "0002a00c", "ISLAND_EDIT_MAGIC_7")
+    hex_send(sock, "0002a017", "ISLAND_EDIT_MAGIC_8")
+    time.sleep(0.5)
+    
+    hex_send(sock, "0002a500", "ISLAND_EDIT_MAGIC_9")
+    time.sleep(0.5)
+    
+    hex_send(sock, "00023209", "ISLAND_EDIT_MAGIC_10")
+    hex_send(sock, "0002f085", "ISLAND_EDIT_MAGIC_11")
+    hex_send(sock, "00022006", "ISLAND_EDIT_MAGIC_12")
+    hex_send(sock, "00025003", "ISLAND_EDIT_MAGIC_13")
+    time.sleep(0.5)
+    
+    # 6. Start sending coords
+    hex_send(sock, "0006010120002000", "ISLAND_EDIT_COORDS")
+    
+    state.in_island_map = True
+
 def browse_stall(sock, target_char_id, stall_uid):
     """
     Browses a stall/shop inside an island.

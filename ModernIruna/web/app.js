@@ -46,10 +46,8 @@ document.addEventListener("DOMContentLoaded", () => {
     
     if (fetchIslandsBtn) {
         fetchIslandsBtn.addEventListener("click", () => {
-            fetch("/api/island/action", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({action: "list"})
+            fetch("/api/island/list", {
+                method: "POST"
             });
         });
     }
@@ -58,12 +56,21 @@ document.addEventListener("DOMContentLoaded", () => {
         enterIslandBtn.addEventListener("click", () => {
             const islandId = document.getElementById("target-island-id").value.trim();
             if (islandId) {
-                fetch("/api/island/action", {
+                fetch("/api/island/enter", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({action: "enter", island_id: islandId})
+                    body: JSON.stringify({island_id: islandId})
                 });
             }
+        });
+    }
+
+    const editIslandBtn = document.getElementById("edit-own-island-btn");
+    if (editIslandBtn) {
+        editIslandBtn.addEventListener("click", () => {
+            fetch("/api/island/edit", {
+                method: "POST"
+            });
         });
     }
     
@@ -72,12 +79,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const stallUid = document.getElementById("target-stall-uid").value.trim();
             const charId = document.getElementById("target-stall-char").value.trim();
             if (stallUid && charId) {
-                fetch("/api/island/action", {
+                fetch("/api/island/stall", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({
-                        action: "browse_stall",
-                        char_id: charId,
+                        target_char: charId,
                         stall_uid: stallUid
                     })
                 });

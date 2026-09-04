@@ -312,6 +312,13 @@ def api_island_enter():
     from core.island import enter_island
     enter_island(client.sock, island_id)
     return jsonify({"success": True})
+@app.route("/api/island/edit", methods=["POST"])
+def api_island_edit():
+    if not client or not client.sock:
+        return jsonify({"error": "Not connected"}), 400
+    from core.island import enter_island_edit_mode
+    enter_island_edit_mode(client.sock)
+    return jsonify({"success": True})
 
 @app.route("/api/island/stall", methods=["POST"])
 def api_island_stall():
