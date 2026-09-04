@@ -25,13 +25,17 @@ document.addEventListener("DOMContentLoaded", () => {
     // Always poll logs so they show up on login screen too
     setInterval(fetchLogs, 500);
     
-    // Fetch version on load
+    // Fetch version and hint_url on load
     fetch("/api/state")
         .then(r => r.json())
         .then(data => {
             const verEl = document.getElementById("app-version");
             if (verEl && data.version) {
                 verEl.textContent = `Version: ${data.version}`;
+            }
+            if (!data.connected && data.hint_url) {
+                const input = document.getElementById("mageurl-input");
+                if (input) input.value = data.hint_url;
             }
         }).catch(() => {});
 

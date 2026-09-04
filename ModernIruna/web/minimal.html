@@ -73,6 +73,11 @@
                     
                     if (!pollInterval) pollInterval = setInterval(fetchState, 1000);
                     if (!logPollInterval) logPollInterval = setInterval(fetchLogs, 1000);
+                } else if (!data.connected && data.hint_url) {
+                    const input = document.getElementById("auth-url");
+                    if (!input.value) {
+                        input.value = data.hint_url;
+                    }
                 }
                 
                 document.getElementById('conn-status').innerText = data.connected ? 'Connected' : 'Disconnected';

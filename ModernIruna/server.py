@@ -13,11 +13,12 @@ from core.mob_db import load_mob_db
 # Load Mob SQL on startup
 load_mob_db()
 
-# Parse arguments
 parser = argparse.ArgumentParser(description="Iruna Server")
 parser.add_argument("--minimal", action="store_true", help="Run the server with the minimal web UI (Auto-Zimov)")
 parser.add_argument("--minimalcerbera", action="store_true", help="Run the server with the minimal web UI (Auto-Cerbera)")
 parser.add_argument("--url", type=str, help="Launch URL to auto-connect and auto-start")
+parser.add_argument("--hint-url", type=str, help="Pre-fill UI with this URL, and use it for 12-hour auto-restart")
+parser.add_argument("--restart12hour", action="store_true", help="Automatically reconnect using --hint-url after 12 hours of being disconnected")
 parser.add_argument("--nolog", action="store_true", help="Disable packet logging to disk")
 args = parser.parse_args()
 
@@ -106,29 +107,46 @@ class WebLogRedirector:
 # Route stdout heavily
 sys.stdout = WebLogRedirector(sys.stdout)
 
+def run_auto_connect(target_url):
+    import time
+    print(f"[*] Auto-connecting to {target_url[:50]}...")
+    if client.connect_and_start(target_url):
+        print("[*] Connected! Waiting for world to load...")
+        # Wait until we are fully loaded in a map
+        while not state.current_map_hex:
+            time.sleep(1)
+        # Short buffer to ensure environment is stabilized
+        time.sleep(2)
+        
+        if args.minimalcerbera:
+            print("[*] World loaded. Starting Auto-Cerbera loop!")
+            from core.boss_module import auto_cerbera_loop
+            auto_cerbera_loop(client.sock)
+        else:
+            print("[*] World loaded. Starting Auto-Zimov loop!")
+            from core.boss_module import auto_zimov_loop
+            # Start the loop in this thread
+            auto_zimov_loop(client.sock)
+
 if args.url:
-    def auto_connect_loop():
+    threading.Thread(target=run_auto_connect, args=(args.url,), daemon=True).start()
+
+if args.restart12hour and args.hint_url:
+    def monitor_12hour_restart():
         import time
-        print(f"[*] Auto-connecting to {args.url[:50]}...")
-        if client.connect_and_start(args.url):
-            print("[*] Connected! Waiting for world to load...")
-            # Wait until we are fully loaded in a map
-            while not state.current_map_hex:
-                time.sleep(1)
-            # Short buffer to ensure environment is stabilized
-            time.sleep(2)
-            
-            if args.minimalcerbera:
-                print("[*] World loaded. Starting Auto-Cerbera loop!")
-                from core.boss_module import auto_cerbera_loop
-                auto_cerbera_loop(client.sock)
+        disconnected_time = 0
+        while True:
+            time.sleep(60) # Check every minute
+            if not client.is_connected:
+                disconnected_time += 60
+                if disconnected_time >= 43200: # 12 hours (43200 seconds)
+                    print("[*] 12 hours of disconnection reached. Auto-restarting with hint-url...")
+                    disconnected_time = 0
+                    threading.Thread(target=run_auto_connect, args=(args.hint_url,), daemon=True).start()
             else:
-                print("[*] World loaded. Starting Auto-Zimov loop!")
-                from core.boss_module import auto_zimov_loop
-                # Start the loop in this thread
-                auto_zimov_loop(client.sock)
-            
-    threading.Thread(target=auto_connect_loop, daemon=True).start()
+                disconnected_time = 0
+
+    threading.Thread(target=monitor_12hour_restart, daemon=True).start()
 
 @app.route("/")
 def index():
@@ -272,7 +290,8 @@ def get_state():
         "npc_talk_mode": getattr(state, "npc_talk_mode", False),
         "disabled_buffs": list(getattr(state, "disabled_buffs", set())),
         "pta_rejoin_mode": getattr(state, "pta_rejoin_mode", "NONE"),
-        "pta_active": getattr(state, "pta_active", False)
+        "pta_active": getattr(state, "pta_active", False),
+        "hint_url": getattr(args, "hint_url", None)
     })
 
 @app.route("/api/island/list", methods=["POST"])
