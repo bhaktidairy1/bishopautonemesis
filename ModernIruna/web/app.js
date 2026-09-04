@@ -596,6 +596,11 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("player-mp").textContent = state.player_mp || 0;
         document.getElementById("player-max-hp").textContent = state.player_max_hp || 0;
         document.getElementById("player-max-mp").textContent = state.player_max_mp || 0;
+        
+        const spinaEl = document.getElementById("player-spina");
+        if (spinaEl) {
+            spinaEl.textContent = (state.player_spina || 0).toLocaleString();
+        }
 
         if(state.paused) {
             pauseBtn.classList.add("active-pause");

@@ -114,11 +114,13 @@ def _extract_0130_stats(data_hex: str):
         return False
 
     try:
-        # Use positive lookahead to avoid consuming characters. This prevents an invalid match
-        # from consuming bytes that are part of the real valid match.
+        spina_math = None
+        max_hp_math = None
+        max_mp_math = None
+
+        # 1. Mathematical Footprint Route
         matches = re.finditer(r'(?=([0-9a-f]{8})([0-9a-f]{8})([0-9a-f]{8})([0-9a-f]{4}))', data_hex[idx:])
         for m in matches:
-            # Only match on byte boundaries (even indices)
             if m.start() % 2 != 0:
                 continue
                 
@@ -127,31 +129,59 @@ def _extract_0130_stats(data_hex: str):
             max_mp = int(mp_hex, 16)
             name_len = int(namelen_hex, 16)
             
-            # Name length usually 1 to 32 chars. Max HP/MP sanity checks.
             if 0 < max_hp < 500000 and 0 < max_mp < 100000 and 1 <= name_len <= 32:
-                # end_idx is 28 chars (14 bytes) from m.start() + name length
                 end_idx = m.start() + 28 + (name_len * 2)
-                # Check if the string is followed by a 00 byte
                 if end_idx + 2 <= len(data_hex[idx:]) and data_hex[idx:][end_idx:end_idx+2] == '00':
-                    parsed_name_hex = data_hex[idx:][m.start()+28:end_idx]
-                    
-                    if state.char_name:
-                        expected_name_hex = state.char_name.encode('utf-8').hex()
-                        if parsed_name_hex != expected_name_hex:
-                            continue # Double confirmation failed
-                            
-                    spina = int(spina_hex, 16)
-                    state.player_max_hp = max_hp
-                    state.player_max_mp = max_mp
-                    state.player_spina = spina
-                    
-                    if state.player_hp <= 1:
-                        state.player_hp = max_hp
-                    if state.player_mp <= 1:
-                        state.player_mp = max_mp
-                        
-                    print(f"[+] Login Stats Parsed: Spina: {spina:,} | HP {state.player_hp}/{max_hp} | MP {state.player_mp}/{max_mp}")
-                    return True
+                    spina_math = int(spina_hex, 16)
+                    max_hp_math = max_hp
+                    max_mp_math = max_mp
+                    break
+
+        # 2. Reverse Looking using the Name Route
+        spina_name_val = None
+        if state.char_name:
+            name_hex = state.char_name.encode('utf-8').hex()
+            name_indices = [m.start() for m in re.finditer(name_hex, data_hex[idx:])]
+            for n_idx in name_indices:
+                if n_idx >= 28 and n_idx % 2 == 0:
+                    spina_h = data_hex[idx:][n_idx-28:n_idx-20]
+                    hp_h = data_hex[idx:][n_idx-20:n_idx-12]
+                    mp_h = data_hex[idx:][n_idx-12:n_idx-4]
+                    nlen_h = data_hex[idx:][n_idx-4:n_idx]
+                    try:
+                        hp = int(hp_h, 16)
+                        mp = int(mp_h, 16)
+                        nlen = int(nlen_h, 16)
+                        if nlen == len(state.char_name) and 0 < hp < 500000 and 0 < mp < 100000:
+                            spina_name_val = int(spina_h, 16)
+                            if not max_hp_math:
+                                max_hp_math = hp
+                                max_mp_math = mp
+                            break
+                    except ValueError:
+                        pass
+
+        # 3. Resolve
+        final_spina = None
+        if spina_math is not None and spina_name_val is not None:
+            final_spina = min(spina_math, spina_name_val)
+        elif spina_math is not None:
+            final_spina = spina_math
+        elif spina_name_val is not None:
+            final_spina = spina_name_val
+            
+        if final_spina is not None:
+            state.player_max_hp = max_hp_math
+            state.player_max_mp = max_mp_math
+            state.player_spina = final_spina
+            
+            if state.player_hp <= 1:
+                state.player_hp = max_hp_math
+            if state.player_mp <= 1:
+                state.player_mp = max_mp_math
+                
+            print(f"[+] Login Stats Parsed: Spina: {final_spina:,} | HP {state.player_hp}/{max_hp_math} | MP {state.player_mp}/{max_mp_math}")
+            return True
     except Exception as e:
         print(f"[-] Failed to parse 0130 stats: {e}")
     return False

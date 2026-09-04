@@ -278,6 +278,7 @@ def get_state():
         "auto_cerbera_kill_count": getattr(state, "auto_cerbera_kill_count", 0),
         "auto_cerbera_run_count": getattr(state, "auto_cerbera_run_count", 0),
         "spina_earned": getattr(state, "spina_earned", 0),
+        "player_spina": getattr(state, "player_spina", 0),
         "player_hp": getattr(state, "player_hp", 0),
         "player_mp": getattr(state, "player_mp", 0),
         "player_max_hp": getattr(state, "player_max_hp", 0),
