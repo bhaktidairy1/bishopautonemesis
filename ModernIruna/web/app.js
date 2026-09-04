@@ -117,10 +117,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const connectIslandBtn = document.getElementById("connect-island-btn");
     const emailInput = document.getElementById("email-input");
+    const charNameInput = document.getElementById("char-name-input");
+    
     if(connectIslandBtn) {
         connectIslandBtn.addEventListener("click", () => {
             const url = urlInput.value.trim();
             const email = emailInput ? emailInput.value.trim() : "";
+            const charName = charNameInput ? charNameInput.value.trim() : "";
+            
             if(!url || !email) {
                 statusMsg.textContent = "Error: MageURL and Email are required for Island Mode.";
                 return;
@@ -132,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
             fetch("/api/island/connect", {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({url, email})
+                body: JSON.stringify({url, email, char_name: charName})
             })
             .then(res => res.json())
             .then(data => {

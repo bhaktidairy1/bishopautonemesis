@@ -178,7 +178,10 @@ def connect_island():
     data = request.json
     url = data.get("url")
     email = data.get("email")
+    char_name = data.get("char_name")
     if not url or not email: return jsonify({"error": "URL and Email required for Island"}), 400
+    
+    state.char_name = char_name if char_name else None
 
     def background_island_connect():
         import time

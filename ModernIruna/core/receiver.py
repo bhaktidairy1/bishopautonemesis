@@ -412,6 +412,13 @@ def handle_0130_char_stats(payload: bytes):
                 end_idx = m.start() + 28 + (name_len * 2)
                 # Check if the string is followed by a 00 byte
                 if end_idx + 2 <= len(data_hex) and data_hex[end_idx:end_idx+2] == '00':
+                    parsed_name_hex = data_hex[m.start()+28:end_idx]
+                    
+                    if state.char_name:
+                        expected_name_hex = state.char_name.encode('utf-8').hex()
+                        if parsed_name_hex != expected_name_hex:
+                            continue # Double confirmation failed
+                            
                     spina = int(spina_hex, 16)
                     state.player_max_hp = max_hp
                     state.player_max_mp = max_mp
