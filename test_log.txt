@@ -1,0 +1,2 @@
+This is a test log file from the server.
+It contains some packet dumps.

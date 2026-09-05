@@ -17,6 +17,7 @@ parser = argparse.ArgumentParser(description="Iruna Server")
 parser.add_argument("--minimal", action="store_true", help="Run the server with the minimal web UI (Auto-Zimov)")
 parser.add_argument("--minimalcerbera", action="store_true", help="Run the server with the minimal web UI (Auto-Cerbera)")
 parser.add_argument("--url", type=str, help="Launch URL to auto-connect and auto-start")
+parser.add_argument("--email", type=str, help="Email required for minimal island mode features")
 parser.add_argument("--hint-url", type=str, help="Pre-fill UI with this URL, and use it for 12-hour auto-restart")
 parser.add_argument("--restart12hour", action="store_true", help="Automatically reconnect using --hint-url after 12 hours of being disconnected")
 parser.add_argument("--nolog", action="store_true", help="Disable packet logging to disk")
@@ -109,24 +110,86 @@ sys.stdout = WebLogRedirector(sys.stdout)
 
 def run_auto_connect(target_url):
     import time
-    print(f"[*] Auto-connecting to {target_url[:50]}...")
-    if client.connect_and_start(target_url):
-        print("[*] Connected! Waiting for world to load...")
-        # Wait until we are fully loaded in a map
-        while not state.current_map_hex:
-            time.sleep(1)
-        # Short buffer to ensure environment is stabilized
-        time.sleep(2)
-        
-        if args.minimalcerbera:
-            print("[*] World loaded. Starting Auto-Cerbera loop!")
-            from core.boss_module import auto_cerbera_loop
-            auto_cerbera_loop(client.sock)
+    while True:
+        print(f"[*] Auto-connecting to {target_url[:50]}...")
+        if client.connect_and_start(target_url):
+            print("[*] Connected! Waiting for world to load...")
+            # Wait until we are fully loaded in a map
+            while not getattr(state, "current_map_hex", None):
+                time.sleep(1)
+                if not client.is_connected: break
+                
+            if not client.is_connected:
+                time.sleep(5)
+                continue
+                
+            # Short buffer to ensure environment is stabilized
+            time.sleep(2)
+            
+            if args.minimal or args.minimalcerbera:
+                if args.minimalcerbera:
+                    print("[*] World loaded. Starting Auto-Cerbera loop!")
+                    from core.boss_module import auto_cerbera_loop
+                    auto_cerbera_loop(client.sock)
+                else:
+                    print("[*] World loaded. Starting Auto-Zimov loop!")
+                    from core.boss_module import auto_zimov_loop
+                    # Start the loop in this thread
+                    auto_zimov_loop(client.sock)
+                    
+                # Check for auto-deposit trigger
+                if getattr(state, "trigger_island_deposit", False):
+                    state.trigger_island_deposit = False
+                    print("\n==================================================")
+                    print(" [AUTO DEPOSIT 1B SEQUENCE INITIATED]")
+                    print("==================================================")
+                    
+                    try: client.sock.close()
+                    except: pass
+                    client.is_connected = False
+                    client.sock = None
+                    time.sleep(5)
+                    
+                    email = getattr(args, "email", None)
+                    if not email:
+                        print("[-] No --email provided! Cannot perform Island Deposit.")
+                        break
+                        
+                    print("[*] Connecting to Island mode...")
+                    if client.connect_to_island_and_start(target_url, email):
+                        time.sleep(5)
+                        
+                        from core.island import enter_island_edit_mode, deposit_1b_spina
+                        print("[*] Entering Island Edit Mode...")
+                        enter_island_edit_mode(client.sock)
+                        time.sleep(5)
+                        
+                        if getattr(state, "player_spina", 0) >= 1002000000:
+                            print("[*] Spina is sufficient. Depositing 1B...")
+                            deposit_1b_spina(client.sock)
+                            time.sleep(2)
+                            state.spina_earned = max(0, getattr(state, "spina_earned", 0) - 1000000000)
+                        else:
+                            print(f"[-] Parsed island spina is {getattr(state, 'player_spina', 0)}. Not enough to deposit.")
+                            state.spina_earned = 0
+                            
+                        print("[*] Disconnecting from Island Mode...")
+                        try: client.sock.close()
+                        except: pass
+                        client.is_connected = False
+                        client.sock = None
+                        time.sleep(5)
+                        print("[*] Reconnecting to normal game mode...")
+                        continue
+                    else:
+                        print("[-] Failed to connect to island mode.")
+                        break
+                else:
+                    break
+            else:
+                break
         else:
-            print("[*] World loaded. Starting Auto-Zimov loop!")
-            from core.boss_module import auto_zimov_loop
-            # Start the loop in this thread
-            auto_zimov_loop(client.sock)
+            break
 
 if args.url:
     threading.Thread(target=run_auto_connect, args=(args.url,), daemon=True).start()
@@ -227,29 +290,7 @@ def connect_iruna():
     url = data.get("url")
     if not url: return jsonify({"error": "No URL provided"}), 400
 
-    def background_connect():
-        import time
-        if client.connect_and_start(url):
-            if args.minimal or args.minimalcerbera:
-                mode_name = "Cerbera" if args.minimalcerbera else "Zimov"
-                print(f"[*] Connected via minimal UI. Waiting for world to load to auto-start {mode_name}...")
-                # Wait until we are fully loaded in a map
-                while not state.current_map_hex:
-                    time.sleep(1)
-                # Short buffer to ensure environment is stabilized
-                time.sleep(2)
-                
-                print(f"[*] World loaded. Auto-starting {mode_name}...")
-                if not getattr(state, "auto_nemesis_running", False):
-                    if args.minimalcerbera:
-                        from core.boss_module import auto_cerbera_loop
-                        auto_cerbera_loop(client.sock)
-                    else:
-                        from core.boss_module import auto_zimov_loop
-                        # Start the loop in this thread
-                        auto_zimov_loop(client.sock)
-
-    threading.Thread(target=background_connect, daemon=True).start()
+    threading.Thread(target=run_auto_connect, args=(url,), daemon=True).start()
     return jsonify({"status": "Connecting..."})
 
 @app.route("/api/state", methods=["GET"])

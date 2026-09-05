@@ -368,6 +368,11 @@ def auto_zimov_loop(sock):
     try:
         consecutive_kills = 0
         while state.auto_zimov_running:
+            if getattr(state, "spina_earned", 0) >= 1500000000:
+                print("[*] Reached 1.5B Spina earned! Triggering Auto-Deposit Sequence...")
+                state.trigger_island_deposit = True
+                break
+                
             player_died = False
             
             # Check if we should heal/sell
@@ -531,6 +536,11 @@ def auto_cerbera_loop(sock):
     try:
         consecutive_kills = 0
         while state.auto_cerbera_running:
+            if getattr(state, "spina_earned", 0) >= 1500000000:
+                print("[*] Reached 1.5B Spina earned! Triggering Auto-Deposit Sequence...")
+                state.trigger_island_deposit = True
+                break
+                
             player_died = False
             
             # Check if we should heal/sell
