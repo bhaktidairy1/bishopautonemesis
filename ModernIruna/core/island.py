@@ -218,3 +218,16 @@ def parse_island_data(payload_hex):
     except Exception as e:
         print(f"[-] Failed to parse island list: {e}")
         return []
+
+def deposit_1b_spina(sock):
+    """
+    Sequence to convert 1,000,000,000 Spina into a 1B Spina Item.
+    Requires at least 1,002,000,000 Spina in inventory to be safe.
+    """
+    print("[*] Initiating 1B Spina Deposit Sequence...")
+    hex_send(sock, "0002b402", "DEPOSIT_INIT_1")
+    time.sleep(0.5)
+    hex_send(sock, "0007b4040100000001", "DEPOSIT_EXECUTE_1B")
+    time.sleep(0.5)
+    hex_send(sock, "0002b402", "DEPOSIT_FINALIZE")
+    print("[+] 1B Spina Deposit Sequence Completed.")

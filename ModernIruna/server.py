@@ -320,9 +320,21 @@ def api_island_enter():
 def api_island_edit():
     if not client or not client.sock:
         return jsonify({"error": "Not connected"}), 400
+    
     from core.island import enter_island_edit_mode
     enter_island_edit_mode(client.sock)
-    return jsonify({"success": True})
+    return jsonify({"status": "Entering Edit Mode"})
+
+@app.route("/api/island/deposit_1b", methods=["POST"])
+def api_island_deposit_1b():
+    if not client or not client.sock:
+        return jsonify({"error": "Not connected"}), 400
+    if getattr(state, "player_spina", 0) < 1002000000:
+        return jsonify({"error": "Not enough spina. Need at least 1,002,000,000."}), 400
+        
+    from core.island import deposit_1b_spina
+    deposit_1b_spina(client.sock)
+    return jsonify({"status": "Depositing 1B Spina"})
 
 @app.route("/api/island/stall", methods=["POST"])
 def api_island_stall():

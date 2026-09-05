@@ -65,12 +65,25 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    const editIslandBtn = document.getElementById("edit-own-island-btn");
-    if (editIslandBtn) {
-        editIslandBtn.addEventListener("click", () => {
-            fetch("/api/island/edit", {
-                method: "POST"
-            });
+    const editOwnIslandBtn = document.getElementById("edit-own-island-btn");
+    if(editOwnIslandBtn) {
+        editOwnIslandBtn.addEventListener("click", () => {
+            fetch("/api/island/edit", { method: "POST" });
+        });
+    }
+
+    const deposit1bBtn = document.getElementById("deposit-1b-btn");
+    if(deposit1bBtn) {
+        deposit1bBtn.addEventListener("click", () => {
+            fetch("/api/island/deposit_1b", { method: "POST" })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.error) {
+                        alert(data.error);
+                    } else {
+                        console.log("Deposit 1B Spina triggered.");
+                    }
+                });
         });
     }
     
@@ -600,6 +613,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const spinaEl = document.getElementById("player-spina");
         if (spinaEl) {
             spinaEl.textContent = (state.player_spina || 0).toLocaleString();
+        }
+        
+        const islandSpinaEl = document.getElementById("island-player-spina");
+        if (islandSpinaEl) {
+            islandSpinaEl.textContent = (state.player_spina || 0).toLocaleString();
         }
 
         if(state.paused) {
