@@ -18,6 +18,7 @@ parser.add_argument("--minimal", action="store_true", help="Run the server with 
 parser.add_argument("--minimalcerbera", action="store_true", help="Run the server with the minimal web UI (Auto-Cerbera)")
 parser.add_argument("--url", type=str, help="Launch URL to auto-connect and auto-start")
 parser.add_argument("--email", type=str, help="Email required for minimal island mode features")
+parser.add_argument("--ign", type=str, help="In-Game Name required for double confirm spina parsing in minimal mode")
 parser.add_argument("--hint-url", type=str, help="Pre-fill UI with this URL, and use it for 12-hour auto-restart")
 parser.add_argument("--restart12hour", action="store_true", help="Automatically reconnect using --hint-url after 12 hours of being disconnected")
 parser.add_argument("--nolog", action="store_true", help="Disable packet logging to disk")
@@ -110,6 +111,9 @@ sys.stdout = WebLogRedirector(sys.stdout)
 
 def run_auto_connect(target_url):
     import time
+    if getattr(args, "ign", None):
+        state.char_name = args.ign
+        
     while True:
         print(f"[*] Auto-connecting to {target_url[:50]}...")
         if client.connect_and_start(target_url):
